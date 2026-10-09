@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Management — Caliber Labs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        .panel-section { display: none; }
+        .panel-section.active { display: block; animation: riseIn 0.35s ease-out forwards; }
+        @keyframes riseIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] flex flex-col pb-20 md:flex-row md:pb-0">
+    {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=False %}
+
+    <!-- SIDEBAR -->
+    <aside class="hidden md:flex w-72 md:min-h-screen bg-white border-b md:border-b-0 md:border-r border-[#E7E3D6] flex-col justify-between z-30 select-none shrink-0">
+        <div>
+            <div class="h-20 md:h-24 flex items-center px-5 md:px-7 border-b border-[#E7E3D6] space-x-3.5">
+                <div class="bg-[#1F4D3A] w-11 h-11 rounded-lg text-white shadow-sm flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-fingerprint text-base"></i>
+                </div>
+                <div>
+                    <span class="font-display font-700 text-sm tracking-tight text-[#14231C] block leading-tight">Caliber Labs</span>
+                    <span class="block text-[10px] tracking-wide text-[#6B7D74] font-semibold mt-0.5">Attendance Suite</span>
+                </div>
+            </div>
+            <div class="p-4 space-y-6">
+                <div>
+                    <div class="px-3 text-[10px] font-semibold tracking-wide text-[#8B8577] uppercase mb-2.5">Control Panel</div>
+                    <nav class="space-y-1">
+                        <button onclick="switchPanel('list')" id="btn-list" class="panel-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg bg-[#1F4D3A] text-white">
+                            <i class="fa-solid fa-users w-5 mr-3"></i> Members Directory
+                        </button>
+                        <button onclick="switchPanel('create')" id="btn-create" class="panel-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA]">
+                            <i class="fa-solid fa-circle-plus w-5 mr-3 text-[#6B7D74]"></i> Bulk Marking
+                        </button>
+                    </nav>
+                    <nav class="mt-5 space-y-1 border-t border-[#E7E3D6] pt-4" aria-label="Gym operations">
+                        <a href="{% url 'manage_workouts' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-dumbbell w-5 mr-3 text-[#1F4D3A]" aria-hidden="true"></i> Workout Plans</a>
+                        <a href="{% url 'manage_diets' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-bowl-food w-5 mr-3 text-[#A87C3F]" aria-hidden="true"></i> Nutrition Plans</a>
+                        <a href="{% url 'manage_attendance' %}" aria-current="page" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg bg-[#F4F2EA] text-[#1F4D3A]"><i class="fa-solid fa-fingerprint w-5 mr-3" aria-hidden="true"></i> Attendance</a>
+                        <a href="{% url 'exercise_directory' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-book-open w-5 mr-3 text-[#9A7A3F]" aria-hidden="true"></i> Exercise Directory</a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-[#E7E3D6] space-y-3">
+            <a href="{% url 'dashboard' %}" class="w-full flex items-center justify-center px-4 py-3 text-xs font-semibold text-[#1F4D3A] bg-[#F4F2EA] hover:bg-[#eae6db] rounded-xl border border-[#E7E3D6]">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Core Dashboard
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 min-w-0 flex flex-col min-h-0 md:h-screen overflow-hidden">
+        <header class="min-h-20 md:h-24 bg-white/90 backdrop-blur border-b border-[#E7E3D6] px-5 sm:px-8 flex justify-between items-center gap-4 z-20">
+            <div>
+            <h1 id="panel-title" class="font-display text-lg font-semibold text-[#14231C] sm:text-xl">{% if selected_member %}Member attendance{% else %}Attendance Operations{% endif %}</h1>
+            <p id="panel-subtitle" class="mt-1 text-sm text-[#6B7568]">{% if selected_member %}Chronological attendance history and monthly totals.{% else %}Browse the member directory or record attendance in bulk.{% endif %}</p>
+            </div>
+            <span class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-[#1F4D3A] text-[11px] font-semibold shrink-0">
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> {{ role }}
+            </span>
+        </header>
+
+        <main class="flex-1 min-h-0 overflow-y-auto p-4 pb-24 sm:p-6 lg:p-10 md:pb-10">
+            {% if messages %}
+                <div class="space-y-2 mb-6" aria-live="polite">
+                    {% for message in messages %}
+                        <div class="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-800">
+                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i> {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- LIST SECTION -->
+            <div id="section-list" class="panel-section active space-y-6">
+                {% if selected_member %}
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <a href="{% url 'manage_attendance' %}" class="inline-flex items-center gap-2 text-xs font-semibold text-[#1F4D3A] hover:underline"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to member directory</a>
+                        <button onclick="switchPanel('create')" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1F4D3A] text-xs font-semibold text-white rounded-xl shadow-sm hover:bg-[#173c2d] transition-colors"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i> Mark attendance</button>
+                    </div>
+
+                    <section class="bg-white border border-[#E7E3D6] rounded-2xl p-5 sm:p-6 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="w-12 h-12 rounded-2xl bg-emerald-50 text-[#1F4D3A] font-display font-bold text-lg flex items-center justify-center shrink-0">{{ selected_member.username|first|upper }}</span>
+                                <div class="min-w-0">
+                                    <h2 class="font-display text-lg font-bold text-[#14231C] truncate">{{ selected_member.get_full_name|default:selected_member.username }}</h2>
+                                    <p class="text-xs text-[#6B7568] mt-0.5 truncate">{{ selected_member.email|default:"No email provided" }}</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center gap-2 w-fit rounded-full bg-[#F4F2EA] px-3 py-2 text-[11px] font-semibold text-[#4B5750]"><i class="fa-solid fa-clipboard-check text-[#1F4D3A]" aria-hidden="true"></i>{{ selected_member.attendances.count }} recorded days</span>
+                        </div>
+                    </section>
+
+                    {% for month in monthly_records %}
+                        <section class="bg-white border border-[#E7E3D6] rounded-2xl shadow-sm overflow-hidden">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 bg-[#FCFBF8] border-b border-[#E7E3D6]">
+                                <h3 class="font-display text-base font-bold text-[#14231C]">{{ month.month|date:"F Y" }}</h3>
+                                <div class="flex flex-wrap gap-2 text-[10px] font-semibold">
+                                    <span class="rounded-full bg-[#F4F2EA] text-[#4B5750] px-2.5 py-1">{{ month.records|length }} days</span>
+                                    <span class="rounded-full bg-green-50 text-green-700 px-2.5 py-1">{{ month.present_count }} present</span>
+                                    <span class="rounded-full bg-red-50 text-red-700 px-2.5 py-1">{{ month.absent_count }} absent</span>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full min-w-[420px] text-left text-sm">
+                                    <thead class="text-[10px] uppercase text-[#8B8577] border-b border-[#EEEBDD]"><tr><th scope="col" class="px-4 sm:px-6 py-3 font-semibold">Date</th><th scope="col" class="px-4 sm:px-6 py-3 font-semibold">Day</th><th scope="col" class="px-4 sm:px-6 py-3 font-semibold">Attendance</th></tr></thead>
+                                    <tbody class="divide-y divide-[#F0EEE7]">
+                                        {% for record in month.records %}
+                                            <tr><td class="px-4 sm:px-6 py-3.5 font-semibold text-[#14231C]">{{ record.date|date:"M j, Y" }}</td><td class="px-4 sm:px-6 py-3.5 text-[#6B7568]">{{ record.date|date:"l" }}</td><td class="px-4 sm:px-6 py-3.5">{% if record.status == 'Present' %}<span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 text-green-700 px-2.5 py-1 font-semibold"><i class="fa-solid fa-check" aria-hidden="true"></i>Present</span>{% else %}<span class="inline-flex items-center gap-1.5 rounded-full bg-red-50 text-red-700 px-2.5 py-1 font-semibold"><i class="fa-solid fa-minus" aria-hidden="true"></i>Absent</span>{% endif %}</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    {% empty %}
+                        <div class="bg-white border border-[#E7E3D6] rounded-2xl py-14 px-6 text-center shadow-sm">
+                            <span class="mx-auto mb-3 flex w-12 h-12 items-center justify-center rounded-2xl bg-[#F4F2EA] text-[#6B7568]"><i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i></span>
+                            <p class="text-sm font-semibold text-[#14231C]">No attendance history</p>
+                            <p class="text-xs text-[#8B8577] mt-1">Records for {{ selected_member.username }} will appear here by month.</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                        <div>
+                            <h2 class="font-display text-lg font-bold text-[#14231C]">Member directory</h2>
+                            <p class="text-xs text-[#6B7568] mt-1">Select a member to review their monthly attendance history.</p>
+                        </div>
+                        <form method="GET" class="flex gap-2 w-full lg:w-auto">
+                            <label for="member-search" class="sr-only">Search members</label>
+                            <input id="member-search" type="search" name="q" value="{{ search_query }}" placeholder="Search name, username, or email" class="min-w-0 w-full rounded-xl border border-[#E7E3D6] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#1F4D3A] lg:w-80">
+                            <button type="submit" aria-label="Search members" class="w-10 shrink-0 rounded-xl bg-[#1F4D3A] text-white hover:bg-[#173c2d]"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
+                        </form>
+                    </div>
+
+                    <div class="bg-white border border-[#E7E3D6] rounded-2xl overflow-hidden shadow-sm">
+                        {% if members %}
+                            <div class="overflow-x-auto">
+                                <table class="w-full min-w-[620px] text-left text-sm">
+                                    <thead class="bg-[#FCFBF8] text-[#6B7568] border-b border-[#E7E3D6]"><tr><th scope="col" class="px-4 sm:px-6 py-3.5 font-semibold">Member</th><th scope="col" class="px-4 sm:px-6 py-3.5 font-semibold">Plan</th><th scope="col" class="px-4 sm:px-6 py-3.5 font-semibold">Recorded days</th><th scope="col" class="px-4 sm:px-6 py-3.5"></th></tr></thead>
+                                    <tbody class="divide-y divide-[#EEEBE0]">
+                                        {% for member in members %}
+                                            <tr class="hover:bg-[#FCFBF8] transition-colors">
+                                                <td class="px-4 sm:px-6 py-4"><div class="flex items-center gap-3"><span class="w-9 h-9 rounded-xl bg-[#F4F2EA] text-[#1F4D3A] font-bold flex items-center justify-center shrink-0">{{ member.username|first|upper }}</span><div class="min-w-0"><p class="font-semibold text-[#14231C] truncate">{{ member.get_full_name|default:member.username }}</p><p class="text-[10px] text-[#8B8577] mt-0.5 truncate">{{ member.email|default:"No email provided" }}</p></div></div></td>
+                                                <td class="px-4 sm:px-6 py-4 text-[#4B5750]">{{ member.plan.name|default:"No plan assigned" }}</td>
+                                                <td class="px-4 sm:px-6 py-4"><span class="font-semibold text-[#14231C]">{{ member.attendance_count }}</span><span class="text-[#8B8577]"> · {{ member.present_count }} present</span></td>
+                                                <td class="px-4 sm:px-6 py-4 text-right"><a href="?member_id={{ member.pk }}" class="inline-flex items-center gap-2 text-[#1F4D3A] font-semibold hover:underline">View history <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="py-14 px-6 text-center"><span class="mx-auto mb-3 flex w-12 h-12 items-center justify-center rounded-2xl bg-[#F4F2EA] text-[#6B7568]"><i class="fa-solid fa-users-slash" aria-hidden="true"></i></span><p class="text-sm font-semibold text-[#14231C]">No matching members</p><p class="text-xs text-[#8B8577] mt-1">Try another name or email search.</p></div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- CREATE SECTION -->
+            <div id="section-create" class="panel-section space-y-6">
+                <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wide text-[#9A7A3F]">Daily register</p>
+                        <h3 class="font-display text-lg font-semibold text-[#14231C] mt-1">Bulk attendance register</h3>
+                        <p class="text-xs text-[#6B7568] mt-1">Choose a date, set each member’s status, then save the full register.</p>
+                    </div>
+                    <form method="GET" class="flex flex-col sm:flex-row sm:items-end gap-2 bg-white border border-[#E7E3D6] p-3 rounded-2xl shadow-sm">
+                        <div>
+                            <label for="attendance-date" class="block text-[10px] font-bold uppercase text-[#6B7568] mb-1.5">Attendance date</label>
+                            <div class="relative">
+                                <i class="fa-regular fa-calendar absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7568]" aria-hidden="true"></i>
+                                <input id="attendance-date" type="date" name="date" value="{{ selected_date }}" required class="w-full sm:w-52 bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#14231C] outline-none focus:border-[#1F4D3A]">
+                            </div>
+                        </div>
+                        <button type="submit" class="px-4 py-2.5 bg-[#F4F2EA] border border-[#E7E3D6] text-[#1F4D3A] rounded-xl font-semibold text-xs hover:bg-[#eae6db] transition-colors">
+                            Load date
+                        </button>
+                    </form>
+                </div>
+
+                {% if error %}
+                    <div class="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-800" role="alert">
+                        <i class="fa-solid fa-circle-exclamation mt-0.5" aria-hidden="true"></i> {{ error }}
+                    </div>
+                {% endif %}
+
+                <form method="POST" class="bg-white border border-[#E7E3D6] rounded-2xl shadow-sm overflow-hidden">
+                    {% csrf_token %}
+                    <input type="hidden" name="date" value="{{ selected_date }}">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-b border-[#E7E3D6] bg-[#FCFBF8]">
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 rounded-xl bg-emerald-50 text-[#1F4D3A] flex items-center justify-center"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+                            <div>
+                                <h4 class="text-sm font-bold text-[#14231C]">Member roster</h4>
+                                <p class="text-[11px] text-[#6B7568] mt-0.5">{{ members|length }} registered member{{ members|length|pluralize }}</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-2 w-fit rounded-full bg-[#F4F2EA] px-3 py-1.5 text-[11px] font-semibold text-[#4B5750]">
+                            <i class="fa-regular fa-calendar-check text-[#1F4D3A]" aria-hidden="true"></i> {{ selected_date|date:"M j, Y" }}
+                        </span>
+                    </div>
+
+                    {% if members %}
+                        <div class="overflow-x-auto">
+                                <table class="w-full min-w-[680px] text-left text-sm">
+                                <thead class="bg-[#F9F8F3] text-[#6B7568]">
+                                    <tr>
+                                        <th scope="col" class="px-4 sm:px-6 py-3 font-semibold">Member</th>
+                                        <th scope="col" class="px-4 sm:px-6 py-3 font-semibold">Membership</th>
+                                        <th scope="col" class="px-4 sm:px-6 py-3 font-semibold">Attendance status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-[#EEEBE0]">
+                                    {% for member in members %}
+                                        <tr class="hover:bg-[#FCFBF8] transition-colors">
+                                            <td class="px-4 sm:px-6 py-3.5">
+                                                <div class="flex items-center gap-3">
+                                                    <span class="w-9 h-9 rounded-xl bg-[#F4F2EA] text-[#1F4D3A] font-bold flex items-center justify-center shrink-0">{{ member.username|first|upper }}</span>
+                                                    <div class="min-w-0">
+                                                        <p class="font-semibold text-[#14231C] truncate">{{ member.get_full_name|default:member.username }}</p>
+                                                        <p class="text-[10px] text-[#8B8577] mt-0.5 truncate">{{ member.email|default:"No email provided" }}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 sm:px-6 py-3.5 text-[#4B5750]">{{ member.plan.name|default:"No plan assigned" }}</td>
+                                            <td class="px-4 sm:px-6 py-3.5">
+                                                <label for="attendance-{{ member.pk }}" class="sr-only">Status for {{ member.username }}</label>
+                                                <select id="attendance-{{ member.pk }}" name="attendance_{{ member.pk }}" required class="w-full max-w-44 rounded-xl border border-[#DCD8CB] bg-white px-3 py-2.5 text-xs font-semibold text-[#14231C] outline-none focus:border-[#1F4D3A]">
+                                                    <option value="Present" {% if member.attendance_status == 'Present' %}selected{% endif %}>Present</option>
+                                                    <option value="Absent" {% if member.attendance_status == 'Absent' %}selected{% endif %}>Absent</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:px-6 border-t border-[#E7E3D6]">
+                            <p class="text-[11px] text-[#6B7568]"><i class="fa-solid fa-circle-info mr-1 text-[#9A7A3F]" aria-hidden="true"></i> Saving updates each member’s record for this date.</p>
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#1F4D3A] text-white text-xs font-semibold rounded-xl shadow-sm hover:bg-[#173c2d] transition-colors">
+                                <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save attendance for all
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="py-14 px-6 text-center">
+                            <span class="mx-auto mb-3 flex w-12 h-12 items-center justify-center rounded-2xl bg-[#F4F2EA] text-[#6B7568]"><i class="fa-solid fa-users-slash" aria-hidden="true"></i></span>
+                            <p class="text-sm font-semibold text-[#14231C]">No gym members found</p>
+                            <p class="text-xs text-[#8B8577] mt-1">Registered member accounts will appear here.</p>
+                        </div>
+                    {% endif %}
+                </form>
+                <div class="flex justify-end">
+                    <button type="button" onclick="switchPanel('list')" class="inline-flex items-center gap-2 text-xs font-semibold text-[#4B5750] hover:text-[#1F4D3A]"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to attendance history</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function switchPanel(panelId) {
+            document.querySelectorAll('.panel-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.panel-btn').forEach(btn => {
+                btn.classList.remove('bg-[#1F4D3A]', 'text-white');
+                btn.classList.add('text-[#4B5750]');
+            });
+            document.getElementById('section-' + panelId).classList.add('active');
+            const activeBtn = document.getElementById('btn-' + panelId);
+            if(activeBtn) {
+                activeBtn.classList.remove('text-[#4B5750]');
+                activeBtn.classList.add('bg-[#1F4D3A]', 'text-white');
+            }
+        }
+    </script>
+</body>
+</html>

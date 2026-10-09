@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Payments Review - Caliber Labs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] p-10 pb-24 md:pl-64 md:pb-10">
+    {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
+    <div class="max-w-6xl mx-auto space-y-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-[#E7E3D6]">
+            <div>
+                <h1 class="font-display text-lg font-semibold">Admin Payments Review Panel</h1>
+                <p class="mt-1 text-sm text-gray-500">Approve or reject fee payment proofs submitted by members.</p>
+            </div>
+            <a href="{% url 'dashboard' %}" class="bg-[#1F4D3A] text-white px-4 py-2.5 rounded-lg text-xs font-semibold flex items-center">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Payments Table -->
+        <div class="bg-white border border-[#E7E3D6] rounded-2xl overflow-hidden shadow-sm">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-[#F9F8F3] border-b border-[#E7E3D6] text-[#6B7568]">
+                    <tr>
+                        <th class="p-4 font-semibold">Member</th>
+                        <th class="p-4 font-semibold">Amount</th>
+                        <th class="p-4 font-semibold">Bank Name</th>
+                        <th class="p-4 font-semibold">Transaction ID</th>
+                        <th class="p-4 font-semibold">Receipt</th>
+                        <th class="p-4 font-semibold">Status</th>
+                        <th class="p-4 font-semibold text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[#EEEBE0]">
+                    {% for p in payments %}
+                    <tr>
+                        <td class="p-4 font-semibold text-[#14231C]">{{ p.member.username }}</td>
+                        <td class="p-4 font-bold text-[#1F4D3A]">Rs. {{ p.amount }}</td>
+                        <td class="p-4 text-[#4B5750]">{{ p.bank_name|default:"N/A" }}</td>
+                        <td class="p-4 font-mono text-gray-600">{{ p.transaction_id|default:"N/A" }}</td>
+                        <td class="p-4">
+                            {% if p.receipt_image %}
+                                <a href="{{ p.receipt_image.url }}" target="_blank" class="text-blue-600 underline font-semibold flex items-center">
+                                    <i class="fa-solid fa-image mr-1"></i> View Receipt
+                                </a>
+                            {% else %}
+                                <span class="text-gray-400 italic">No image</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4">
+                            {% if p.status == 'Approved' %}
+                                <span class="text-green-700 font-semibold bg-green-50 px-2.5 py-1 rounded-full">Approved</span>
+                            {% elif p.status == 'Rejected' %}
+                                <span class="text-red-700 font-semibold bg-red-50 px-2.5 py-1 rounded-full">Rejected</span>
+                            {% else %}
+                                <span class="text-amber-700 font-semibold bg-amber-50 px-2.5 py-1 rounded-full">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center">
+                            <form method="POST" class="inline-flex gap-2">
+                                {% csrf_token %}
+                                <input type="hidden" name="payment_id" value="{{ p.id }}">
+                                {% if p.status != 'Approved' %}
+                                    <button type="submit" name="action" value="Approve" class="bg-[#1F4D3A] text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-[#173C2D] transition-colors">Approve</button>
+                                {% endif %}
+                                {% if p.status != 'Rejected' %}
+                                    <button type="submit" name="action" value="Reject" class="bg-[#A6402E] text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-[#8B3526] transition-colors">Reject</button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="p-8 text-center text-gray-500 italic">No payment submissions found in the system.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition &amp; Diet Management — Caliber Labs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        .panel-section { display: none; }
+        .panel-section.active { display: block; animation: riseIn 0.35s ease-out forwards; }
+        @keyframes riseIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] flex overflow-hidden">
+    {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=False %}
+
+    <!-- SIDEBAR -->
+    <aside class="hidden md:flex w-72 bg-white border-r border-[#E7E3D6] flex-col justify-between z-30 select-none">
+        <div>
+            <div class="h-24 flex items-center px-7 border-b border-[#E7E3D6] space-x-3.5">
+                <div class="bg-[#1F4D3A] w-11 h-11 rounded-lg text-white shadow-sm flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-bowl-food text-base"></i>
+                </div>
+                <div>
+                    <span class="font-display font-700 text-sm tracking-tight text-[#14231C] block leading-tight">Caliber Labs</span>
+                    <span class="block text-[10px] tracking-wide text-[#A87C3F] font-semibold mt-0.5">Diet Management</span>
+                </div>
+            </div>
+            <div class="p-4 space-y-6">
+                <div>
+                    <div class="px-3 text-[10px] font-semibold tracking-wide text-[#8B8577] uppercase mb-2.5">Control Panel</div>
+                    <nav class="space-y-1">
+                        <button onclick="switchPanel('list')" id="btn-list" class="panel-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg bg-[#1F4D3A] text-white">
+                            <i class="fa-solid fa-list-check w-5 mr-3"></i> Active Diets
+                        </button>
+                        <button onclick="switchPanel('create')" id="btn-create" class="panel-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA]">
+                            <i class="fa-solid fa-circle-plus w-5 mr-3 text-[#A87C3F]"></i> Add New Diet
+                        </button>
+                    </nav>
+                    <nav class="mt-5 space-y-1 border-t border-[#E7E3D6] pt-4" aria-label="Gym operations">
+                        <a href="{% url 'manage_workouts' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-dumbbell w-5 mr-3 text-[#1F4D3A]" aria-hidden="true"></i> Workout Plans</a>
+                        <a href="{% url 'manage_diets' %}" aria-current="page" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg bg-[#F4F2EA] text-[#1F4D3A]"><i class="fa-solid fa-bowl-food w-5 mr-3" aria-hidden="true"></i> Nutrition Plans</a>
+                        <a href="{% url 'manage_attendance' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-fingerprint w-5 mr-3 text-[#6B7D74]" aria-hidden="true"></i> Attendance</a>
+                        <a href="{% url 'exercise_directory' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-book-open w-5 mr-3 text-[#9A7A3F]" aria-hidden="true"></i> Exercise Directory</a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-[#E7E3D6] space-y-3">
+            <a href="{% url 'dashboard' %}" class="w-full flex items-center justify-center px-4 py-3 text-xs font-semibold text-[#1F4D3A] bg-[#F4F2EA] hover:bg-[#eae6db] rounded-xl border border-[#E7E3D6]">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Core Dashboard
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+        <header class="min-h-20 md:h-24 bg-white/90 backdrop-blur border-b border-[#E7E3D6] px-4 sm:px-6 lg:px-8 flex justify-between items-center gap-4 z-20">
+            <div>
+                <h1 id="panel-title" class="font-display text-xl font-semibold text-[#14231C]">Nutrition Plans Directory</h1>
+                <p id="panel-subtitle" class="mt-1 text-sm text-[#6B7568]">Manage customized meal plans and caloric schedules.</p>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
+            <!-- LIST SECTION -->
+            <div id="section-list" class="panel-section active space-y-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-display text-base font-semibold text-[#14231C]">Assigned Diet Schedules</h3>
+                    <button onclick="switchPanel('create')" class="px-5 py-2.5 bg-[#1F4D3A] text-xs font-semibold text-white rounded-xl shadow-sm">
+                        <i class="fa-solid fa-plus mr-1.5"></i> Create Diet Plan
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+                    {% for d in diets %}
+                        <article class="flex h-full min-w-0 flex-col justify-between rounded-xl border border-[#E7E3D6] bg-white p-5 shadow-sm">
+                            <div>
+                                <h4 class="font-semibold text-[#14231C] text-sm">{{ d.title }}</h4>
+                                <p class="mt-3 break-words text-sm leading-relaxed text-[#6B7568]">{{ d.meal_details }}</p>
+                            </div>
+                            <div class="mt-5 flex items-center justify-between gap-3 border-t border-[#EEEBE0] pt-4 text-sm">
+                                <span class="text-[#8B8577] font-semibold uppercase text-[10px]">Assigned Member</span>
+                                <span class="bg-[#F4F2EA] text-[#1F4D3A] font-semibold px-3 py-1 rounded-lg border border-[#E7E3D6]">
+                                    {{ d.member.username }}
+                                </span>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <div class="col-span-2 text-center py-16 text-[#8B8577] text-xs italic bg-white rounded-2xl border border-dashed border-[#E7E3D6]">
+                            No diet records found.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- CREATE SECTION -->
+            <div id="section-create" class="panel-section space-y-6 max-w-xl">
+                <div class="bg-white border border-[#E7E3D6] rounded-2xl p-8 shadow-sm">
+                    <h3 class="font-display text-lg font-semibold text-[#14231C] mb-1">Create Nutrition Plan</h3>
+                    <p class="mb-6 text-sm text-[#6B7568]">Assign a custom diet routine to any member.</p>
+                    <form method="POST" class="space-y-4 text-sm">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block font-semibold text-[#14231C] mb-1.5">Diet Title</label>
+                            <input type="text" name="title" required placeholder="e.g., High Protein Mass Gain" class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-4 py-3 text-sm text-[#14231C] outline-none focus:border-[#1F4D3A]">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-[#14231C] mb-1.5">Meal Details &amp; Guidelines</label>
+                            <textarea name="description" rows="4" required placeholder="Describe breakfast, lunch, dinner, macros..." class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-4 py-3 text-sm text-[#14231C] outline-none focus:border-[#1F4D3A]"></textarea>
+                        </div>
+                        <div>
+                            <label for="diet-member" class="block font-semibold text-[#14231C] mb-1.5">Assign to Member</label>
+                            <select id="diet-member" name="member_id" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-4 py-3 text-sm text-[#14231C] outline-none focus:border-[#1F4D3A]">
+                                <option value="" selected disabled>Select a member</option>
+                                {% for member in members %}
+                                    <option value="{{ member.pk }}">{{ member.get_full_name|default:member.username }}{% if member.email %} · {{ member.email }}{% endif %}</option>
+                                {% empty %}
+                                    <option value="" disabled>No gym members available</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="pt-4 flex justify-end space-x-3">
+                            <button type="button" onclick="switchPanel('list')" class="px-5 py-2.5 bg-[#F4F2EA] font-semibold text-[#4B5750] rounded-xl border border-[#E7E3D6]">Cancel</button>
+                            <button type="submit" class="px-5 py-2.5 bg-[#1F4D3A] font-semibold text-white rounded-xl shadow-sm">Save Diet Plan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function switchPanel(panelId) {
+            document.querySelectorAll('.panel-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.panel-btn').forEach(btn => {
+                btn.classList.remove('bg-[#1F4D3A]', 'text-white');
+                btn.classList.add('text-[#4B5750]');
+            });
+            document.getElementById('section-' + panelId).classList.add('active');
+            const activeBtn = document.getElementById('btn-' + panelId);
+            if(activeBtn) {
+                activeBtn.classList.remove('text-[#4B5750]');
+                activeBtn.classList.add('bg-[#1F4D3A]', 'text-white');
+            }
+        }
+    </script>
+</body>
+</html>

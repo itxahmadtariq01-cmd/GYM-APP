@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account — Caliber Labs</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+        /* Matching input styling */
+        input[type="text"], input[type="password"], input[type="email"] {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 1rem;
+            border: 1px solid #E7E3D6;
+            background-color: #F9F8F3;
+            color: #14231C;
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus {
+            border-color: #1F4D3A;
+            background-color: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(31, 77, 58, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] flex items-center justify-center p-4 antialiased selection:bg-[#1F4D3A] selection:text-white">
+
+    <!-- Main Container filling screen nicely -->
+    <div class="max-w-5xl w-full bg-white border border-[#E7E3D6] rounded-3xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
+        
+        <!-- Left Side: Brand & Visual Panel -->
+        <div class="bg-[#1F4D3A] p-12 text-white flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-white/5 pointer-events-none"></div>
+            
+            <div>
+                <div class="bg-white/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm">
+                    <i class="fa-solid fa-bolt-lightning text-xl text-[#9A7A3F]"></i>
+                </div>
+                <h1 class="font-display text-3xl font-bold tracking-tight">Caliber Labs</h1>
+                <p class="text-xs text-emerald-200/80 mt-2">Join the ultimate gym operations & member tracking ecosystem.</p>
+            </div>
+
+            <div class="space-y-4 pt-12">
+                <div class="flex items-center space-x-3 text-xs text-emerald-100/90">
+                    <i class="fa-solid fa-user-check text-[#9A7A3F]"></i>
+                    <span>Mandatory Profile Onboarding for Members</span>
+                </div>
+                <div class="flex items-center space-x-3 text-xs text-emerald-100/90">
+                    <i class="fa-solid fa-utensils text-[#9A7A3F]"></i>
+                    <span>Daily Meal & Workout Logging Suite</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Signup Form Panel -->
+        <div class="p-8 md:p-10 flex flex-col justify-center bg-white">
+            
+            <div class="mb-5">
+                <h2 class="font-display text-2xl font-bold text-[#14231C] tracking-tight">Join Caliber Labs</h2>
+                <p class="text-xs text-[#6B7568] mt-0.5">Create your gym member account</p>
+            </div>
+
+            <!-- Error Handling -->
+            {% if form.errors %}
+                <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">
+                    Please fix the errors below and try again[cite: 3].
+                </div>
+            {% endif %}
+
+            <!-- Signup Form -->
+            <form method="post" class="space-y-3 text-xs">
+                {% csrf_token %}
+                
+                {% for field in form %}
+                <div>
+                    <label class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest mb-1">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text and field.name != 'password1' and field.name != 'password2' %}
+                        <p class="text-[10px] text-gray-400 mt-1">{{ field.help_text|safe }}</p>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <p class="text-[10px] text-red-600 mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="w-full bg-[#1F4D3A] hover:bg-[#173c2d] text-white font-semibold py-3.5 rounded-2xl shadow-sm transition-all duration-200 text-xs tracking-wide flex items-center justify-center mt-3">
+                    Create Account &amp; Proceed <i class="fa-solid fa-arrow-right ml-2 text-xs"></i>
+                </button>
+            </form>
+
+            <!-- Login Redirect Link -->
+            <div class="mt-5 text-center text-xs text-[#6B7568]">
+                Already have an account? <a href="{% url 'login' %}" class="text-[#1F4D3A] font-bold hover:underline">Sign In here</a>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

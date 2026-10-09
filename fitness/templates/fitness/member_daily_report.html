@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Progress Report — Caliber Labs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] antialiased pb-24 md:pl-64 md:pb-0">
+    {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
+    <header class="bg-white border-b border-[#E7E3D6]">
+        <div class="max-w-7xl mx-auto min-h-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+                <span class="w-10 h-10 rounded-xl bg-[#1F4D3A] text-white flex items-center justify-center shrink-0"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span>
+                <div class="min-w-0">
+                    <p class="font-display font-bold text-sm text-[#14231C] truncate">Caliber Labs</p>
+                    <p class="text-[10px] text-[#6B7568]">Member progress report</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="{% url 'admin_member_detail' member.pk %}" class="inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-white border border-[#E7E3D6] rounded-xl text-xs font-semibold text-[#1F4D3A] hover:bg-[#F9F8F3]"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span class="hidden sm:inline">Member details</span></a>
+                <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-[#1F4D3A] rounded-xl text-xs font-semibold text-white hover:bg-[#173c2d]"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i><span class="hidden sm:inline">Dashboard</span></a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+        <section class="bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-7 shadow-sm">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+                <div class="flex items-center gap-4 min-w-0">
+                    <span class="w-14 h-14 rounded-2xl bg-emerald-50 text-[#1F4D3A] flex items-center justify-center font-display text-xl font-bold shrink-0">{{ member.username|slice:":1"|upper }}</span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-bold uppercase tracking-wide text-[#9A7A3F]">{{ role }} · Daily progress</p>
+                        <h1 class="font-display text-xl sm:text-2xl font-bold text-[#14231C] mt-1 break-words">{{ member.get_full_name|default:member.username }}</h1>
+                        <p class="text-xs text-[#6B7568] mt-1 break-all">{{ member.email|default:"No email provided" }} · Member since {{ member.date_joined|date:"M j, Y" }}</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                    <div class="rounded-xl bg-amber-50 px-3 py-2.5 min-w-24"><p class="text-[10px] font-semibold text-amber-800">Meals</p><p class="font-display text-lg font-bold text-[#14231C]">{{ summary.meal_count }}</p></div>
+                    <div class="rounded-xl bg-emerald-50 px-3 py-2.5 min-w-24"><p class="text-[10px] font-semibold text-emerald-800">Strength</p><p class="font-display text-lg font-bold text-[#14231C]">{{ summary.workout_count }}</p></div>
+                    <div class="rounded-xl bg-sky-50 px-3 py-2.5 min-w-24"><p class="text-[10px] font-semibold text-sky-800">Cardio</p><p class="font-display text-lg font-bold text-[#14231C]">{{ summary.cardio_count }}</p></div>
+                    <div class="rounded-xl bg-[#F4F2EA] px-3 py-2.5 min-w-24"><p class="text-[10px] font-semibold text-[#6B7568]">Cardio time</p><p class="font-display text-lg font-bold text-[#14231C]">{{ summary.cardio_minutes }} <span class="text-[10px] font-sans font-semibold">min</span></p></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white border border-[#E7E3D6] rounded-3xl shadow-sm overflow-hidden">
+            <div class="px-5 sm:px-7 py-4 border-b border-[#E7E3D6]">
+                <h2 class="font-display text-base font-bold text-[#14231C]">Daily activity timeline</h2>
+                <p class="text-[11px] text-[#6B7568] mt-1">Submitted records grouped from earliest to latest date.</p>
+            </div>
+
+            {% for day in daily_activity %}
+                <section class="px-5 sm:px-7 py-5 {% if not forloop.first %}border-t border-[#E7E3D6]{% endif %}">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                        <h3 class="font-display text-sm font-bold text-[#14231C] flex items-center gap-2"><i class="fa-regular fa-calendar text-[#1F4D3A]" aria-hidden="true"></i>{{ day.date|date:"l, F j, Y" }}</h3>
+                        <p class="text-[10px] text-[#6B7568]">{{ day.meals|length }} meal{{ day.meals|length|pluralize }} · {{ day.workouts|length }} strength session{{ day.workouts|length|pluralize }} · {{ day.cardio|length }} cardio session{{ day.cardio|length|pluralize }}</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-7">
+                        <div class="min-w-0">
+                            <h4 class="text-[10px] font-bold uppercase tracking-wide text-amber-800 flex items-center gap-2 mb-3"><i class="fa-solid fa-utensils" aria-hidden="true"></i> Meals</h4>
+                            {% for meal in day.meals %}
+                                <article class="border-l-2 border-amber-200 pl-3 py-1.5 mb-3">
+                                    <div class="flex justify-between items-baseline gap-2"><p class="text-xs font-semibold text-[#14231C]">{{ meal.meal_type }}</p><time class="text-[10px] text-[#8B8577]">{{ meal.created_at|date:"H:i" }}</time></div>
+                                    <p class="text-[11px] text-[#6B7568] mt-1 whitespace-pre-line break-words">{{ meal.description }}</p>
+                                    {% if meal.receipt_image %}<a href="{{ meal.receipt_image.url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-[#1F4D3A] hover:underline"><i class="fa-regular fa-image" aria-hidden="true"></i> View receipt</a>{% endif %}
+                                </article>
+                            {% empty %}<p class="text-[11px] text-[#9B968A]">No meal entries.</p>{% endfor %}
+                        </div>
+
+                        <div class="min-w-0">
+                            <h4 class="text-[10px] font-bold uppercase tracking-wide text-emerald-800 flex items-center gap-2 mb-3"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i> Strength</h4>
+                            {% for workout in day.workouts %}
+                                <article class="border-l-2 border-emerald-200 pl-3 py-1.5 mb-3">
+                                    <div class="flex justify-between items-baseline gap-2"><p class="text-xs font-semibold text-[#14231C]">{% if workout.did_workout %}{{ workout.muscle_split }}{% else %}Rest day{% endif %}</p><time class="text-[10px] text-[#8B8577]">{{ workout.created_at|date:"H:i" }}</time></div>
+                                    {% if workout.did_workout %}
+                                        <ul class="mt-1.5 space-y-1 text-[11px] text-[#6B7568]">
+                                            {% for exercise in workout.exercises.all %}<li class="break-words">{{ exercise.exercise_name }} · {{ exercise.sets }} sets x {{ exercise.rep_range }} reps</li>
+                                            {% empty %}{% if workout.exercise_details %}<li class="whitespace-pre-line">{{ workout.exercise_details }}</li>{% else %}<li>No exercise details submitted.</li>{% endif %}{% endfor %}
+                                        </ul>
+                                    {% endif %}
+                                </article>
+                            {% empty %}<p class="text-[11px] text-[#9B968A]">No strength entries.</p>{% endfor %}
+                        </div>
+
+                        <div class="min-w-0">
+                            <h4 class="text-[10px] font-bold uppercase tracking-wide text-sky-800 flex items-center gap-2 mb-3"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i> Cardio</h4>
+                            {% for session in day.cardio %}
+                                <article class="border-l-2 border-sky-200 pl-3 py-1.5 mb-3">
+                                    <div class="flex justify-between items-baseline gap-2"><p class="text-xs font-semibold text-[#14231C]">{{ session.activity }}</p><time class="text-[10px] text-[#8B8577]">{{ session.created_at|date:"H:i" }}</time></div>
+                                    <p class="text-[11px] text-[#6B7568] mt-1">{{ session.duration_minutes }} min · {{ session.intensity }} intensity</p>
+                                    {% if session.notes %}<p class="text-[11px] text-[#6B7568] mt-1 break-words">{{ session.notes }}</p>{% endif %}
+                                </article>
+                            {% empty %}<p class="text-[11px] text-[#9B968A]">No cardio entries.</p>{% endfor %}
+                        </div>
+                    </div>
+                </section>
+            {% empty %}
+                <div class="px-5 sm:px-7 py-16 text-center">
+                    <span class="mx-auto mb-3 flex w-12 h-12 items-center justify-center rounded-2xl bg-[#F4F2EA] text-[#6B7568]"><i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i></span>
+                    <p class="text-sm font-semibold text-[#14231C]">No daily activity recorded</p>
+                    <p class="text-xs text-[#8B8577] mt-1">Meal, strength, and cardio reports will appear here once submitted.</p>
+                </div>
+            {% endfor %}
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Caliber Labs gym operations dashboard — workouts, nutrition, attendance and member management.">
+    <title>Caliber Labs — Fitness Intelligence</title>
+
+    <!-- Fonts: preconnect + stylesheet link (faster first paint than @import) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CDN (dev/preview only — swap for a compiled Tailwind build in production) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: riseIn 0.35s ease-out forwards; }
+        @keyframes riseIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Understated scrollbar */
+        ::-webkit-scrollbar { width: 7px; height: 7px; }
+        ::-webkit-scrollbar-track { background: #F3F1EA; }
+        ::-webkit-scrollbar-thumb { background: #C7C2B2; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #1F4D3A; }
+
+        .nav-btn { transition: background-color .18s ease, color .18s ease; }
+        .stat-card { transition: border-color .2s ease, transform .2s ease; }
+        .stat-card:hover { transform: translateY(-2px); }
+
+        /* Visible focus ring for keyboard users (buttons/links/inputs) */
+        .nav-btn:focus-visible,
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible {
+            outline: 2px solid #1F4D3A;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] antialiased selection:bg-[#1F4D3A] selection:text-white flex overflow-hidden">
+    {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=False %}
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside id="sidebar" class="hidden md:flex w-72 bg-white border-r border-[#E7E3D6] flex-col justify-between z-30 select-none">
+        <div>
+            <!-- Brand Header -->
+            <div class="h-24 flex items-center px-7 border-b border-[#E7E3D6] space-x-3.5">
+                <div class="bg-[#1F4D3A] w-11 h-11 rounded-lg text-white shadow-sm flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-bolt-lightning text-base" aria-hidden="true"></i>
+                </div>
+                <div>
+                    <span class="font-display font-700 text-sm tracking-tight text-[#14231C] block leading-tight">Caliber Labs</span>
+                    <span class="block text-[10px] tracking-wide text-[#9A7A3F] font-semibold mt-0.5">Gym Operations</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="p-4 space-y-7 overflow-y-auto max-h-[calc(100vh-11rem)]">
+
+                <!-- MAIN MENU -->
+                <div>
+                    <div class="px-3 text-[11px] font-semibold tracking-wide text-[#8B8577] uppercase mb-2.5">Overview</div>
+                    <nav class="space-y-1" role="tablist" aria-label="Dashboard sections">
+                        <button type="button" onclick="switchTab('overview', this)" id="tabbtn-overview" role="tab" aria-selected="true" aria-controls="tab-overview" class="tab-btn nav-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg bg-[#1F4D3A] text-white">
+                            <i class="fa-solid fa-chart-line w-5 mr-3" aria-hidden="true"></i> Command Center
+                        </button>
+                    </nav>
+                </div>
+
+<!-- OPERATIONS -->
+                <div>
+                    <div class="px-3 text-[11px] font-semibold tracking-wide text-[#8B8577] uppercase mb-2.5">Operations</div>
+                    <nav class="space-y-1" role="tablist" aria-label="Operations">
+                        {% if role == 'Admin' or role == 'Trainer' or role == 'Staff' %}
+                        <a href="{% url 'manage_workouts' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-dumbbell w-5 mr-3 text-[#1F4D3A]" aria-hidden="true"></i> Workout Plans
+                        </a>
+                        {% else %}
+                        <button type="button" onclick="switchTab('workouts', this)" id="tabbtn-workouts" role="tab" aria-selected="false" aria-controls="tab-workouts" class="tab-btn nav-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-dumbbell w-5 mr-3 text-[#1F4D3A]" aria-hidden="true"></i> Workout Plans
+                        </button>
+                        {% endif %}
+
+                        <!-- Nutrition Plans Link (Admin, Trainer aur Staff ke liye manage page) -->
+                        {% if role == 'Admin' or role == 'Trainer' or role == 'Staff' %}
+                        <a href="{% url 'manage_diets' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-bowl-food w-5 mr-3 text-[#A87C3F]" aria-hidden="true"></i> Nutrition Plans
+                        </a>
+                        {% else %}
+                        <button type="button" onclick="switchTab('diets', this)" id="tabbtn-diets" role="tab" aria-selected="false" aria-controls="tab-diets" class="tab-btn nav-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-bowl-food w-5 mr-3 text-[#A87C3F]" aria-hidden="true"></i> Nutrition Plans
+                        </button>
+                        {% endif %}
+
+                        <!-- Attendance Log Link -->
+                        {% if role == 'Admin' or role == 'Trainer' or role == 'Staff' %}
+                        <a href="{% url 'manage_attendance' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-fingerprint w-5 mr-3 text-[#6B7D74]" aria-hidden="true"></i> Attendance Log
+                        </a>
+                        {% else %}
+                        <button type="button" onclick="switchTab('attendance', this)" id="tabbtn-attendance" role="tab" aria-selected="false" aria-controls="tab-attendance" class="tab-btn nav-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-fingerprint w-5 mr-3 text-[#6B7D74]" aria-hidden="true"></i> Attendance Log
+                        </button>
+                        {% endif %}
+
+                        <!-- Daily Logging & AI Generator sirf Members ke liye (Admin aur Trainer ke liye hide) -->
+                        {% if role != 'Admin' and role != 'Trainer' and role != 'Staff' %}
+                        <a href="{% url 'member_logging' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-clipboard-list w-5 mr-3 text-[#1F4D3A]" aria-hidden="true"></i> Daily Logging
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+
+                <div class="mx-2 rounded-xl border border-[#D8C89A] border-l-4 border-l-[#A87C3F] bg-[#FCFBF8] p-3">
+                    <div class="mb-2 flex items-center justify-between gap-2 px-1">
+                        <span class="text-[11px] font-semibold uppercase tracking-wide text-[#765A2D]">Featured tools</span>
+                        <span class="rounded-full bg-[#F3EBD5] px-2 py-0.5 text-[9px] font-bold uppercase text-[#765A2D]">Plus</span>
+                    </div>
+                    <nav class="space-y-1" aria-label="Featured tools">
+                        <a href="{% url 'exercise_directory' %}" class="group flex w-full items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-[13px] font-semibold text-[#284C3A] shadow-sm ring-1 ring-[#E7E3D6] hover:bg-emerald-50">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3EBD5] text-[#9A7A3F]"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
+                            <span>Exercise Directory</span><span class="ml-auto text-[9px] font-bold uppercase text-[#9A7A3F]">Guide</span>
+                        </a>
+                        {% if role != 'Admin' and role != 'Trainer' and role != 'Staff' %}
+                        <a href="{% url 'ai_workouts' %}" class="group flex w-full items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-[13px] font-semibold text-[#284C3A] shadow-sm ring-1 ring-[#E7E3D6] hover:bg-emerald-50">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3EBD5] text-[#9A7A3F]"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></span>
+                            <span>AI Workout Generator</span><span class="ml-auto rounded-full bg-[#F3EBD5] px-1.5 py-0.5 text-[9px] font-bold text-[#765A2D]">AI</span>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+
+                <!-- ADMINISTRATION / MANAGEMENT (Admin aur Trainer dono ke liye) -->
+                {% if role == 'Admin' or role == 'Trainer' %}
+                <div>
+                    <div class="px-3 text-[10px] font-semibold tracking-wide text-[#8B8577] uppercase mb-2.5">Management</div>
+                    <nav class="space-y-1" role="tablist" aria-label="Management">
+                        {% if role == 'Admin' %}
+                        <a href="{% url 'manage_trainers' %}" class="flex w-full items-center gap-3 rounded-lg border border-[#D8C89A] bg-[#FCFBF8] px-3.5 py-2.5 text-sm font-semibold text-[#765A2D] hover:bg-[#F3EBD5]">
+                            <i class="fa-solid fa-people-group w-5 text-center" aria-hidden="true"></i> Trainer Management
+                        </a>
+                        <a href="/admin/" target="_blank" rel="noopener noreferrer" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-shield-halved w-5 mr-3 text-[#A6402E]" aria-hidden="true"></i> Django Admin
+                        </a>
+                        {% endif %}
+                        <button type="button" onclick="switchTab('users', this)" id="tabbtn-users" role="tab" aria-selected="false" aria-controls="tab-users" class="tab-btn nav-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-users-gear w-5 mr-3 text-[#1F4D3A]" aria-hidden="true"></i> Members Analytics
+                        </button>
+                        {% if role == 'Admin' %}
+                        <a href="{% url 'admin_payments' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-receipt w-5 mr-3 text-[#A87C3F]" aria-hidden="true"></i> Payments Review
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+                {% endif %}
+
+                <!-- ACCOUNT -->
+                <div>
+                    <div class="px-3 text-[10px] font-semibold tracking-wide text-[#8B8577] uppercase mb-2.5">Account</div>
+                    <nav class="space-y-1" role="tablist" aria-label="Account">
+                        <button type="button" onclick="switchTab('profile', this)" id="tabbtn-profile" role="tab" aria-selected="false" aria-controls="tab-profile" class="tab-btn nav-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-id-badge w-5 mr-3 text-[#A87C3F]" aria-hidden="true"></i> Profile &amp; Payments
+                        </button>
+                    </nav>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Sidebar Footer / Profile Card -->
+        <div class="p-4 border-t border-[#E7E3D6]">
+            <div class="flex items-center justify-between text-xs bg-[#F4F2EA] p-3.5 rounded-xl border border-[#E7E3D6]">
+                <div class="truncate flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-[#1F4D3A] flex items-center justify-center font-display font-700 text-white text-xs" aria-hidden="true">
+                        {{ request.user.username|slice:":1"|upper }}
+                    </div>
+                    <div class="truncate">
+                        <span class="block font-semibold text-[#14231C] truncate text-xs">{{ request.user.username }}</span>
+                        <span class="text-[10px] text-[#9A7A3F] font-semibold tracking-wide">{{ role }}</span>
+                    </div>
+                </div>
+                <form action="{% url 'logout' %}" method="post" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" title="Log out" aria-label="Log out" class="p-2.5 rounded-lg text-[#A6402E] hover:bg-[#A6402E] hover:text-white transition-colors">
+                        <i class="fa-solid fa-power-off text-xs" aria-hidden="true"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- RIGHT MAIN CONTENT AREA -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+
+        <!-- Header -->
+        <header class="min-h-20 md:h-24 bg-white/90 backdrop-blur border-b border-[#E7E3D6] px-4 sm:px-6 lg:px-8 flex justify-between items-center gap-4 z-20">
+            <div>
+                <h1 id="page-title" class="font-display text-xl font-semibold text-[#14231C] tracking-tight">Command Center</h1>
+            <p id="page-subtitle" class="mt-1 text-sm text-[#6B7568]">Real-time telemetry across workouts, nutrition and attendance.</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center bg-[#F4F2EA] px-4 py-2.5 rounded-full border border-[#E7E3D6] text-xs text-[#4B5750]">
+                    <span class="w-2 h-2 rounded-full bg-[#1F4D3A] mr-2.5" aria-hidden="true"></span>
+                    Access control: <span class="text-[#1F4D3A] font-semibold ml-1.5">{{ role }}</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Body -->
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
+
+            <!-- TAB 1: OVERVIEW / ADMIN STATS -->
+            <div id="tab-overview" role="tabpanel" aria-labelledby="tabbtn-overview" class="tab-content active space-y-8">
+                <!-- Hero Banner -->
+                <div class="relative overflow-hidden bg-[#1F4D3A] rounded-2xl p-5 sm:p-6">
+                    <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div>
+                            <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/10 text-[#D8C89A] text-[11px] font-semibold mb-3">
+                                <i class="fa-solid fa-shield-check mr-1.5" aria-hidden="true"></i> Session authorized
+                            </div>
+                            <h2 class="font-display text-2xl font-semibold text-white tracking-tight">Welcome back, {{ request.user.username }}</h2>
+                            <p class="text-[#C7D6CC] mt-2 text-sm max-w-xl leading-relaxed">
+                                Your account carries <span class="text-[#D8C89A] font-semibold">{{ role }}</span> access. Comprehensive gym operations telemetry is displayed below.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {% if role == 'Admin' %}
+                <!-- Admin Analytics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="stat-card bg-white border border-[#E7E3D6] p-5 rounded-xl">
+                        <span class="text-[#6B7568] text-xs font-semibold uppercase tracking-wide">Total Members</span>
+                        <div class="font-display text-2xl font-semibold text-[#14231C] mt-3 tracking-tight">{{ total_members }}</div>
+                        <div class="text-sm text-[#6B7568] mt-2">Registered client accounts</div>
+                    </div>
+                    <div class="stat-card bg-white border border-[#E7E3D6] p-5 rounded-xl">
+                        <span class="text-[#6B7568] text-xs font-semibold uppercase tracking-wide">Active Members</span>
+                        <div class="font-display text-2xl font-semibold text-[#1F4D3A] mt-3 tracking-tight">{{ active_members }}</div>
+                        <div class="text-sm text-[#6B7568] mt-2">Currently active subscriptions</div>
+                    </div>
+                    <div class="stat-card bg-white border border-[#E7E3D6] p-5 rounded-xl">
+                        <span class="text-[#6B7568] text-xs font-semibold uppercase tracking-wide">Expired Memberships</span>
+                        <div class="font-display text-2xl font-semibold text-[#A6402E] mt-3 tracking-tight">{{ expired_memberships }}</div>
+                        <div class="text-sm text-[#6B7568] mt-2">Inactive or expired accounts</div>
+                    </div>
+                    <div class="stat-card bg-white border border-[#E7E3D6] p-5 rounded-xl">
+                        <span class="text-[#6B7568] text-xs font-semibold uppercase tracking-wide">Total Revenue (Approved)</span>
+                        <div class="font-display text-xl font-semibold text-[#14231C] mt-3 tracking-tight">Rs. {{ total_revenue }}</div>
+                        <div class="text-sm text-[#6B7568] mt-2">Verified earnings</div>
+                    </div>
+                    <div class="stat-card bg-white border border-[#E7E3D6] p-5 rounded-xl">
+                        <span class="text-[#6B7568] text-xs font-semibold uppercase tracking-wide">Unpaid Amount (Pending)</span>
+                        <div class="font-display text-xl font-semibold text-[#A87C3F] mt-3 tracking-tight">Rs. {{ unpaid_amount }}</div>
+                        <div class="text-sm text-[#6B7568] mt-2">Awaiting payment verification</div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Standard Member Quick Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="stat-card bg-white border border-[#E7E3D6] p-5 rounded-xl">
+                        <span class="text-[#6B7568] text-xs font-semibold uppercase tracking-wide">Total workouts</span>
+                        <div class="font-display text-2xl font-semibold text-[#14231C] mt-3 tracking-tight">{{ workouts|length }}</div>
+                    </div>
+                    <div class="stat-card bg-white border border-[#E7E3D6] p-5 rounded-xl">
+                        <span class="text-[#6B7568] text-xs font-semibold uppercase tracking-wide">Active diet plans</span>
+                        <div class="font-display text-2xl font-semibold text-[#14231C] mt-3 tracking-tight">{{ diets|length }}</div>
+                    </div>
+                    <div class="stat-card bg-white border border-[#E7E3D6] p-5 rounded-xl">
+                        <span class="text-[#6B7568] text-xs font-semibold uppercase tracking-wide">Attendance logs</span>
+                        <div class="font-display text-2xl font-semibold text-[#14231C] mt-3 tracking-tight">{{ attendances|length }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- TAB 2: WORKOUT PLANS (For Members) -->
+            <div id="tab-workouts" role="tabpanel" aria-labelledby="tabbtn-workouts" class="tab-content space-y-6">
+                <div>
+                    <h2 class="font-display text-lg font-semibold text-[#14231C] tracking-tight">Assigned Workout Routines</h2>
+                    <p class="mt-1 text-sm text-[#6B7568]">Active training programs currently mapped to members.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {% if workouts %}
+                        {% for w in workouts %}
+                            <div class="p-6 rounded-2xl bg-white border border-[#E7E3D6]">
+                                <h3 class="font-semibold text-[#14231C] text-sm">{{ w.title }}</h3>
+                                <p class="mt-3 text-sm leading-relaxed text-[#6B7568]">{{ w.description }}</p>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="col-span-2 text-center py-16 text-[#8B8577] text-xs italic bg-white rounded-2xl border border-dashed border-[#E7E3D6]">
+                            No workout records found.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- TAB 3: DIET PLANS (For Members) -->
+            <div id="tab-diets" role="tabpanel" aria-labelledby="tabbtn-diets" class="tab-content space-y-6">
+                <div>
+                    <h2 class="font-display text-lg font-semibold text-[#14231C] tracking-tight">Nutrition &amp; Diet Schedules</h2>
+                    <p class="mt-1 text-sm text-[#6B7568]">Custom meal plans and caloric guidelines.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {% if diets %}
+                        {% for d in diets %}
+                            <div class="p-6 rounded-2xl bg-white border border-[#E7E3D6]">
+                                <h3 class="font-semibold text-[#14231C] text-sm">{{ d.title }}</h3>
+                                <p class="mt-3 text-sm leading-relaxed text-[#6B7568]">{{ d.meal_details }}</p>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="col-span-2 text-center py-16 text-[#8B8577] text-xs italic bg-white rounded-2xl border border-dashed border-[#E7E3D6]">
+                            No diet records found.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- TAB 4: ATTENDANCE (For Members) -->
+            <div id="tab-attendance" role="tabpanel" aria-labelledby="tabbtn-attendance" class="tab-content space-y-6">
+                <div>
+                    <h2 class="font-display text-lg font-semibold text-[#14231C] tracking-tight">Gym Attendance Activity Log</h2>
+                    <p class="mt-1 text-sm text-[#6B7568]">Historical check-in status.</p>
+                </div>
+                <div class="bg-white border border-[#E7E3D6] rounded-2xl overflow-hidden p-4">
+                    {% if attendances %}
+                        <ul>
+                            {% for a in attendances %}
+                                <li class="flex justify-between border-b py-2 text-sm">
+                                    <span>{{ a.date }} - {{ a.member.username }}</span>
+                                    <span class="font-semibold">{{ a.status }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="py-6 text-center text-sm text-gray-500">No attendance logs found.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- TAB 5: PROFILE & FEE PAYMENT SUBMISSION -->
+            <div id="tab-profile" role="tabpanel" aria-labelledby="tabbtn-profile" class="tab-content space-y-6">
+                <div>
+                    <h2 class="font-display text-lg font-semibold text-[#14231C] tracking-tight">
+                        {% if role == 'Admin' %}Admin Control Hub{% else %}Member Profile &amp; Payments{% endif %}
+                    </h2>
+                    <p class="mt-1 text-sm text-[#6B7568]">
+                        {% if role == 'Admin' %}System administrator credentials, quick operations, and server telemetry overview.{% else %}Manage your personal details and submit fee payment proofs.{% endif %}
+                    </p>
+                </div>
+
+                {% if role == 'Admin' %}
+                <!-- Admin Quick Overview Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div class="bg-white border border-[#E7E3D6] p-5 rounded-2xl shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-gray-400 font-medium block">Current Role</span>
+                            <span class="text-base font-bold text-[#14231C] mt-1 block">Super Admin</span>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-[#1F4D3A] font-bold">
+                            <i class="fa-solid fa-shield-halved text-sm" aria-hidden="true"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-[#E7E3D6] p-5 rounded-2xl shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-gray-400 font-medium block">System Status</span>
+                            <span class="text-base font-bold text-emerald-600 mt-1 block">Online & Secure</span>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold">
+                            <i class="fa-solid fa-server text-sm" aria-hidden="true"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-[#E7E3D6] p-5 rounded-2xl shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-gray-400 font-medium block">AI Engine</span>
+                            <span class="text-base font-bold text-[#9A7A3F] mt-1 block">Gemini Flash Active</span>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-[#9A7A3F] font-bold">
+                            <i class="fa-solid fa-microchip text-sm" aria-hidden="true"></i>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if role == 'Member' %}
+                <!-- Member Onboarding Profile Details Section -->
+                <div class="space-y-5 mb-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#E7E3D6] pb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-[#1F4D3A] text-white flex items-center justify-center shadow-sm shrink-0">
+                                <i class="fa-solid fa-user-gear" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-display text-lg font-bold text-[#14231C]">Your fitness profile</h3>
+                                <p class="text-xs text-[#6B7568] mt-0.5">Personal metrics and training preferences</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-2 w-fit px-3 py-1.5 rounded-full bg-emerald-50 text-[#1F4D3A] text-[11px] font-semibold border border-emerald-100">
+                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Profile details
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                        <article class="min-h-[116px] p-4 rounded-2xl border border-emerald-100 bg-emerald-50/70">
+                            <div class="flex items-center gap-3">
+                                <span class="w-10 h-10 rounded-xl bg-white text-[#1F4D3A] flex items-center justify-center shadow-sm"><i class="fa-solid fa-ruler-vertical" aria-hidden="true"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#6B7568]">Height</p>
+                                    <p class="font-display text-lg font-bold text-[#14231C] mt-0.5">{{ request.user.height|default:"Not set" }} <span class="font-sans text-xs font-medium text-[#6B7568]">cm</span></p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="min-h-[116px] p-4 rounded-2xl border border-sky-100 bg-sky-50/70">
+                            <div class="flex items-center gap-3">
+                                <span class="w-10 h-10 rounded-xl bg-white text-sky-700 flex items-center justify-center shadow-sm"><i class="fa-solid fa-weight-scale" aria-hidden="true"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#6B7568]">Weight</p>
+                                    <p class="font-display text-lg font-bold text-[#14231C] mt-0.5">{{ request.user.weight|default:"Not set" }} <span class="font-sans text-xs font-medium text-[#6B7568]">kg</span></p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="min-h-[116px] p-4 rounded-2xl border border-amber-100 bg-amber-50/70">
+                            <div class="flex items-center gap-3">
+                                <span class="w-10 h-10 rounded-xl bg-white text-[#9A7A3F] flex items-center justify-center shadow-sm"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#6B7568]">Experience</p>
+                                    <p class="font-semibold text-sm text-[#14231C] mt-1 break-words">{{ request.user.exercise_experience|default:"Not specified" }}</p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="min-h-[116px] p-4 rounded-2xl border border-rose-100 bg-rose-50/70">
+                            <div class="flex items-center gap-3">
+                                <span class="w-10 h-10 rounded-xl bg-white text-rose-700 flex items-center justify-center shadow-sm"><i class="fa-solid fa-bullseye" aria-hidden="true"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#6B7568]">Primary goal</p>
+                                    <p class="font-semibold text-sm text-[#14231C] mt-1 break-words">{{ request.user.actual_goal|default:"Not specified" }}</p>
+                                    <p class="text-[11px] text-[#6B7568] mt-1">{{ request.user.target_duration_months|default:"--" }} month target</p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="min-h-[116px] p-4 rounded-2xl border border-teal-100 bg-teal-50/70">
+                            <div class="flex items-center gap-3">
+                                <span class="w-10 h-10 rounded-xl bg-white text-teal-700 flex items-center justify-center shadow-sm"><i class="fa-solid fa-calendar-week" aria-hidden="true"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#6B7568]">Training frequency</p>
+                                    <p class="font-semibold text-sm text-[#14231C] mt-1 break-words">{{ request.user.training_frequency|default:"Not specified" }}</p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="min-h-[116px] p-4 rounded-2xl border border-orange-100 bg-orange-50/70">
+                            <div class="flex items-center gap-3">
+                                <span class="w-10 h-10 rounded-xl bg-white text-orange-700 flex items-center justify-center shadow-sm"><i class="fa-solid fa-person-rays" aria-hidden="true"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#6B7568]">Preferred split</p>
+                                    <p class="font-semibold text-sm text-[#14231C] mt-1 break-words">{{ request.user.preferred_muscle_split|default:"Not specified" }}</p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="min-h-[116px] p-4 rounded-2xl border border-indigo-100 bg-indigo-50/60">
+                            <div class="flex items-center gap-3">
+                                <span class="w-10 h-10 rounded-xl bg-white text-indigo-700 flex items-center justify-center shadow-sm"><i class="fa-solid fa-person" aria-hidden="true"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#6B7568]">Body type</p>
+                                    <p class="font-semibold text-sm text-[#14231C] mt-1 break-words">{{ request.user.current_body_type|default:"Not specified" }}</p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="min-h-[116px] p-4 rounded-2xl border border-yellow-100 bg-yellow-50/70">
+                            <div class="flex items-center gap-3">
+                                <span class="w-10 h-10 rounded-xl bg-white text-[#9A7A3F] flex items-center justify-center shadow-sm shrink-0"><i class="fa-solid fa-utensils" aria-hidden="true"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#6B7568]">Daily diet</p>
+                                    <p class="text-sm leading-relaxed text-[#14231C] mt-1 break-words">{{ request.user.normal_diet_routine|default:"Not specified" }}</p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="min-h-[116px] p-4 rounded-2xl border border-cyan-100 bg-cyan-50/70">
+                            <div class="flex items-center gap-3">
+                                <span class="w-10 h-10 rounded-xl bg-white text-cyan-700 flex items-center justify-center shadow-sm shrink-0"><i class="fa-solid fa-person-walking" aria-hidden="true"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#6B7568]">Daily activity</p>
+                                    <p class="text-sm leading-relaxed text-[#14231C] mt-1 break-words">{{ request.user.daily_general_activity|default:"Not specified" }}</p>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Profile / Credentials Card -->
+                <div class="bg-white border border-[#E7E3D6] p-5 sm:p-6 rounded-2xl w-full shadow-sm">
+                    <div class="flex items-center gap-3 border-b border-[#EEEBDD] pb-4 mb-4">
+                        <span class="w-10 h-10 rounded-xl bg-[#F4F2EA] text-[#1F4D3A] flex items-center justify-center"><i class="fa-solid fa-id-card" aria-hidden="true"></i></span>
+                        <div>
+                            <h3 class="font-display font-bold text-sm text-[#14231C]">Account details</h3>
+                            <p class="text-[11px] text-[#6B7568] mt-0.5">Your sign-in and membership information</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 text-xs">
+                        <div class="p-3 rounded-xl bg-[#F9F8F3] border border-[#EEEBDD]"><span class="text-[10px] font-semibold uppercase text-[#8B8577]">Username</span><p class="font-semibold text-[#14231C] mt-1 break-words">{{ request.user.username }}</p></div>
+                        <div class="p-3 rounded-xl bg-[#F9F8F3] border border-[#EEEBDD]"><span class="text-[10px] font-semibold uppercase text-[#8B8577]">Email address</span><p class="font-semibold text-[#14231C] mt-1 break-words">{{ request.user.email|default:"Not provided" }}</p></div>
+                        <div class="p-3 rounded-xl bg-[#F9F8F3] border border-[#EEEBDD]"><span class="text-[10px] font-semibold uppercase text-[#8B8577]">Assigned plan</span><p class="font-semibold text-[#1F4D3A] mt-1 break-words">{{ request.user.plan.name|default:"No Plan Assigned" }}</p></div>
+                        <div class="p-3 rounded-xl bg-[#F9F8F3] border border-[#EEEBDD]"><span class="text-[10px] font-semibold uppercase text-[#8B8577]">Account privilege</span><p class="font-semibold text-[#14231C] mt-1">{{ role }}</p></div>
+                    </div>
+                </div>
+
+                {% if role == 'Member' %}
+                <!-- Payment Submission Form -->
+                <div class="bg-white p-5 sm:p-6 rounded-2xl border border-[#E7E3D6] w-full shadow-sm">
+                    <div class="flex items-center gap-3 border-b border-[#EEEBDD] pb-4 mb-5">
+                        <span class="w-10 h-10 rounded-xl bg-amber-50 text-[#9A7A3F] flex items-center justify-center"><i class="fa-solid fa-money-check-dollar" aria-hidden="true"></i></span>
+                        <div>
+                            <h3 class="font-display text-sm font-bold text-[#14231C]">Submit fee payment proof</h3>
+                            <p class="text-[11px] text-[#6B7568] mt-0.5">Add your transaction details and attach the receipt</p>
+                        </div>
+                    </div>
+                    <form method="POST" action="{% url 'member_profile' %}" enctype="multipart/form-data" class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+                        {% csrf_token %}
+                        <div>
+                            <label for="id_amount" class="block font-semibold mb-1.5 text-gray-700">Amount (Rs.)</label>
+                            <input id="id_amount" type="number" name="amount" min="1" step="0.01" required class="w-full p-3 border border-[#DCD8CB] rounded-xl bg-white focus:outline-none focus:border-[#1F4D3A]" placeholder="e.g. 5000">
+                        </div>
+                        <div>
+                            <label for="id_bank_name" class="block font-semibold mb-1.5 text-gray-700">Bank name</label>
+                            <input id="id_bank_name" type="text" name="bank_name" required class="w-full p-3 border border-[#DCD8CB] rounded-xl bg-white focus:outline-none focus:border-[#1F4D3A]" placeholder="e.g. Meezan Bank / Easypaisa">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label for="id_transaction_id" class="block font-semibold mb-1.5 text-gray-700">Transaction ID / reference</label>
+                            <input id="id_transaction_id" type="text" name="transaction_id" required class="w-full p-3 border border-[#DCD8CB] rounded-xl bg-white focus:outline-none focus:border-[#1F4D3A]" placeholder="e.g. TXN12345678">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label for="id_receipt_image" class="block font-semibold mb-1.5 text-gray-700">Receipt / screenshot</label>
+                            <input id="id_receipt_image" type="file" name="receipt_image" accept="image/*,.pdf" required class="w-full p-3 border border-dashed border-[#CFCABB] rounded-xl bg-[#F9F8F3]">
+                        </div>
+                        <button type="submit" class="sm:col-span-2 bg-[#1F4D3A] text-white px-5 py-3 rounded-xl font-semibold w-full hover:bg-[#173c2d] transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i> Submit payment proof</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- TAB 6: MEMBERS ANALYTICS & SEARCH -->
+            {% if role == 'Admin' or role == 'Trainer' %}
+            <div id="tab-users" role="tabpanel" aria-labelledby="tabbtn-users" class="tab-content space-y-6">
+                <div>
+                    <h2 class="font-display text-lg font-semibold text-[#14231C] tracking-tight">Members Directory &amp; Status Controls</h2>
+                    <p class="mt-1 text-sm text-[#6B7568]">Search members, track admission history, and manage active status.</p>
+                </div>
+
+                <!-- Search and Filters Form -->
+                <div class="bg-white p-4 rounded-xl border border-[#E7E3D6]">
+                    <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="id_search_q" class="sr-only">Search username or email</label>
+                            <input id="id_search_q" type="text" name="q" placeholder="Search username/email..." value="{{ search_query }}" class="w-full rounded-lg border p-2.5 text-sm">
+                        </div>
+                        <div>
+                            <label for="id_status_filter" class="sr-only">Filter by status</label>
+                            <select id="id_status_filter" name="status" class="w-full rounded-lg border p-2.5 text-sm">
+                                <option value="">All Statuses</option>
+                                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+                                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full rounded-lg bg-[#1F4D3A] py-2.5 text-sm font-semibold text-white">Apply Filters</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Members Table -->
+                <div class="bg-white border border-[#E7E3D6] rounded-2xl overflow-x-auto shadow-sm">
+                    <table class="w-full text-left text-sm">
+                        <caption class="sr-only">Members directory with plan, status and admission details</caption>
+                        <thead class="bg-[#F9F8F3] border-b border-[#E7E3D6] text-[#6B7568]">
+                            <tr>
+                                <th scope="col" class="p-3 font-semibold">Username</th>
+                                <th scope="col" class="p-3 font-semibold">Plan</th>
+                                <th scope="col" class="p-3 font-semibold">Profile Status</th>
+                                <th scope="col" class="p-3 font-semibold">Admission Date</th>
+                                <th scope="col" class="p-3 font-semibold">Status</th>
+                                <th scope="col" class="p-3 font-semibold text-center">Action Control</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#EEEBE0]">
+                            {% for m in members %}
+                            <tr>
+                                <td class="p-3 font-semibold text-[#14231C]">
+                                    <a href="{% url 'admin_member_detail' m.id %}" class="font-semibold text-[#1F4D3A] hover:underline">
+                                        {{ m.username }}
+                                    </a>
+                                    <span class="block text-[10px] text-gray-400 font-normal">{{ m.email }}</span>
+                                </td>
+                                <td class="p-3 text-[#4B5750]">{{ m.plan.name|default:"No Plan" }}</td>
+                                <td class="p-3">
+                                    {% if m.is_profile_complete %}
+                                        <span class="text-green-700 font-semibold bg-green-50 px-2.5 py-1 rounded-full">100% Complete</span>
+                                    {% else %}
+                                        <span class="text-amber-700 font-semibold bg-amber-50 px-2.5 py-1 rounded-full">{{ m.calculate_profile_completion }}% Incomplete</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-3 text-[#4B5750]">{{ m.date_joined|date:"Y-m-d" }}</td>
+                                <td class="p-3">
+                                    {% if m.is_active %}
+                                        <span class="text-green-700 font-semibold bg-green-50 px-2.5 py-1 rounded-full">Active</span>
+                                    {% else %}
+                                        <span class="text-red-700 font-semibold bg-red-50 px-2.5 py-1 rounded-full">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-3 text-center">
+                                    <form method="post" action="{% url 'toggle_member_status' m.id %}" class="inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}#tab-users">
+                                        <button type="submit" class="rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors {% if m.is_active %}bg-red-50 text-red-700 border-red-200 hover:bg-red-100{% else %}bg-green-50 text-green-700 border-green-200 hover:bg-green-100{% endif %}">
+                                        {% if m.is_active %} Deactivate {% else %} Activate {% endif %}
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="p-8 text-center text-gray-500 italic">No members match your criteria.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Controls -->
+                <div class="flex justify-center items-center space-x-2 pt-2 text-sm">
+                    {% if members.has_previous %}
+                        <a href="?page={{ members.previous_page_number }}&q={{ search_query }}&status={{ status_filter }}" class="px-3 py-1.5 bg-white border rounded shadow-sm">Previous</a>
+                    {% endif %}
+                    <span class="px-3 py-1.5 font-medium text-gray-600">Page {{ members.number }} of {{ members.paginator.num_pages }}</span>
+                    {% if members.has_next %}
+                        <a href="?page={{ members.next_page_number }}&q={{ search_query }}&status={{ status_filter }}" class="px-3 py-1.5 bg-white border rounded shadow-sm">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+        </main>
+    </div>
+
+    <!-- JavaScript for Tab Switching -->
+    <script>
+        var TAB_META = {
+            overview:   ['Command Center', 'Real-time telemetry across workouts, nutrition and attendance.'],
+            workouts:   ['Workout Plans', 'Active training programs currently mapped to members.'],
+            diets:      ['Nutrition Plans', 'Custom meal plans and caloric guidelines.'],
+            attendance: ['Attendance Log', 'Historical gym check-in activity.'],
+            profile:    ['Profile & Payments', 'Manage your personal details and payments.'],
+            users:      ['Members Analytics', 'Search members, track admission history, and manage active status.']
+        };
+
+        function switchTab(tabId, btn) {
+            var panel = document.getElementById('tab-' + tabId);
+            if (!panel) return; // guard against unknown/role-gated tabs
+
+            document.querySelectorAll('.tab-content').forEach(function (el) {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(function (b) {
+                b.classList.remove('bg-[#1F4D3A]', 'text-white');
+                b.classList.add('text-[#4B5750]');
+                b.setAttribute('aria-selected', 'false');
+            });
+
+            panel.classList.add('active');
+
+            if (btn) {
+                btn.classList.remove('text-[#4B5750]');
+                btn.classList.add('bg-[#1F4D3A]', 'text-white');
+                btn.setAttribute('aria-selected', 'true');
+            }
+
+            var meta = TAB_META[tabId] || TAB_META.overview;
+            var titleEl = document.getElementById('page-title');
+            var subtitleEl = document.getElementById('page-subtitle');
+            if (titleEl) titleEl.textContent = meta[0];
+            if (subtitleEl) subtitleEl.textContent = meta[1];
+
+            try {
+                localStorage.setItem('caliber_active_tab', tabId);
+            } catch (e) {
+                /* storage unavailable (private browsing etc.) — safe to ignore */
+            }
+        }
+
+        // Restore the last viewed tab on reload, if the button for it exists on this page
+        document.addEventListener('DOMContentLoaded', function () {
+            var lastTab = null;
+            try {
+                lastTab = localStorage.getItem('caliber_active_tab');
+            } catch (e) {
+                lastTab = null;
+            }
+            if (lastTab && lastTab !== 'overview') {
+                var btn = document.getElementById('tabbtn-' + lastTab);
+                if (btn) switchTab(lastTab, btn);
+            }
+        });
+    </script>
+</body>
+</html>

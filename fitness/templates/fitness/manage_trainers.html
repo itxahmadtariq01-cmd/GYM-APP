@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Manage Caliber Labs trainers and member assignments.">
+    <title>Trainer Management — Caliber Labs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid #1F4D3A; outline-offset: 2px; }
+    </style>
+</head>
+<body class="min-h-screen bg-[#F4F2EA] text-[#1B241E] antialiased pb-24 md:pb-0 md:pl-64">
+    {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
+
+    <main class="mx-auto max-w-[1600px] space-y-6 px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+        <header class="flex flex-col gap-4 border-b border-[#DCD8CB] pb-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9A7A3F]">People operations</p>
+                <h1 class="font-display mt-1 text-xl font-semibold text-[#14231C] sm:text-2xl">Trainer Management</h1>
+                <p class="mt-1 max-w-2xl text-sm text-[#6B7568]">Onboard coaching staff and match members to the right trainer.</p>
+            </div>
+            <div class="flex items-center gap-2 rounded-lg border border-[#D8C89A] bg-[#FCFBF8] px-3 py-2 text-xs font-semibold text-[#765A2D]">
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Admin workspace
+            </div>
+        </header>
+
+        {% if messages %}
+            <div class="space-y-2" aria-live="polite">
+                {% for message in messages %}
+                    <div class="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
+                        <i class="fa-solid fa-circle-check mt-0.5" aria-hidden="true"></i><span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+            <section class="min-w-0 space-y-5 rounded-2xl border border-[#E7E3D6] bg-white p-5 shadow-sm sm:p-6 xl:col-span-5" aria-labelledby="trainer-roster-title">
+                <div class="flex items-end justify-between gap-3 border-b border-[#DCD8CB] pb-4">
+                    <div>
+                        <h2 id="trainer-roster-title" class="font-display text-base font-semibold text-[#14231C]">Trainer roster</h2>
+                        <p class="mt-1 text-xs text-[#6B7568]">{{ trainers|length }} trainer{{ trainers|length|pluralize }} on staff</p>
+                    </div>
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8F0E9] text-[#1F4D3A]"><i class="fa-solid fa-people-group" aria-hidden="true"></i></span>
+                </div>
+
+                <div class="space-y-3">
+                    {% for trainer in trainers %}
+                        <a href="?trainer_id={{ trainer.pk }}" class="block border-b border-[#EEEBDD] py-4 pl-3 transition-colors last:border-b-0 {% if selected_trainer.pk == trainer.pk %}border-l-2 border-l-[#1F4D3A] bg-[#F6FAF6]{% else %}border-l-2 border-l-transparent hover:bg-[#FCFBF8]{% endif %}">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#1F4D3A] font-display text-sm font-semibold text-white">{{ trainer.first_name|default:trainer.username|first|upper }}</span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="flex flex-wrap items-center justify-between gap-2">
+                                        <span class="font-medium text-sm text-[#14231C]">{{ trainer.get_full_name|default:trainer.username }}</span>
+                                        <span class="rounded-full bg-[#F4F2EA] px-2.5 py-1 text-[10px] font-semibold text-[#4B5750]">{{ trainer.assigned_member_count }} members</span>
+                                    </span>
+                                    <span class="mt-1 block truncate text-xs text-[#6B7568]">{{ trainer.email|default:trainer.username }}</span>
+                                </span>
+                            </div>
+                            {% if trainer.trainer_profile %}
+                                <div class="mt-3 border-t border-[#EEEBDD] pt-3">
+                                    <p class="text-xs leading-relaxed text-[#4B5750]">
+                                        {% if trainer.trainer_profile.years_experience %}<strong class="font-semibold text-[#14231C]">{{ trainer.trainer_profile.years_experience }} years</strong> experience{% endif %}
+                                        {% if trainer.trainer_profile.expertise %}<span>{% if trainer.trainer_profile.years_experience %} · {% endif %}{{ trainer.trainer_profile.expertise }}</span>{% endif %}
+                                        {% if not trainer.trainer_profile.years_experience and not trainer.trainer_profile.expertise %}Profile details not added{% endif %}
+                                    </p>
+                                    {% if trainer.trainer_profile.certifications %}<p class="mt-1 line-clamp-2 text-xs text-[#6B7568]">{{ trainer.trainer_profile.certifications }}</p>{% endif %}
+                                </div>
+                            {% else %}
+                                <p class="mt-3 border-t border-[#EEEBDD] pt-3 text-xs text-[#8B8577]">Professional profile not added</p>
+                            {% endif %}
+                        </a>
+                    {% empty %}
+                        <div class="rounded-xl border border-dashed border-[#DCD8CB] bg-[#FCFBF8] px-4 py-8 text-center">
+                            <i class="fa-solid fa-user-plus text-lg text-[#9A7A3F]" aria-hidden="true"></i>
+                            <p class="mt-2 text-sm font-medium text-[#14231C]">No trainers yet</p>
+                            <p class="mt-1 text-xs text-[#6B7568]">Use the form below to onboard your first trainer.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <details class="group border-t border-[#DCD8CB] pt-4" open>
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl bg-[#FCFBF8] px-4 py-3.5">
+                        <span class="flex items-center gap-2.5">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3EBD5] text-[#9A7A3F]"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span>
+                            <span><span class="block text-sm font-semibold text-[#14231C]">Add new trainer</span><span class="mt-0.5 block text-[11px] text-[#6B7568]">Create credentials and professional profile</span></span>
+                        </span>
+                        <i class="fa-solid fa-chevron-down text-xs text-[#765A2D] transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                    </summary>
+                    <form method="post" class="space-y-4 pt-4 text-sm">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="create_trainer">
+                        {% if trainer_form.non_field_errors %}<div class="rounded-lg bg-red-50 p-3 text-xs text-red-800">{{ trainer_form.non_field_errors }}</div>{% endif %}
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {% for field in trainer_form %}
+                                <div class="{% if field.name == 'password1' or field.name == 'password2' %}sm:col-span-2{% endif %}">
+                                    <label for="{{ field.id_for_label }}" class="mb-1.5 block text-xs font-medium text-[#4B5750]">{{ field.label }}</label>
+                                    <input id="{{ field.id_for_label }}" name="{{ field.html_name }}" type="{{ field.field.widget.input_type|default:'text' }}" value="{{ field.value|default_if_none:'' }}" {% if field.field.required %}required{% endif %} autocomplete="{% if field.name == 'password1' %}new-password{% elif field.name == 'password2' %}new-password{% elif field.name == 'username' %}username{% else %}off{% endif %}" class="w-full rounded-lg border border-[#DCD8CB] bg-[#FCFBF8] px-3 py-2.5 text-sm outline-none focus:border-[#1F4D3A]">
+                                    {% for error in field.errors %}<p class="mt-1 text-xs text-red-700">{{ error }}</p>{% endfor %}
+                                    {% if field.help_text %}<div class="mt-1 text-[10px] leading-relaxed text-[#8B8577]">{{ field.help_text|safe }}</div>{% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="border-t border-[#EEEBDD] pt-4">
+                            <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-[#765A2D]">Professional profile</p>
+                            {% for field in profile_form %}
+                                <div class="mb-3">
+                                    <label for="{{ field.id_for_label }}" class="mb-1.5 block text-xs font-medium text-[#4B5750]">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% for error in field.errors %}<p class="mt-1 text-xs text-red-700">{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#1F4D3A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#173c2d]"><i class="fa-solid fa-user-check" aria-hidden="true"></i> Create trainer account</button>
+                    </form>
+                </details>
+            </section>
+
+            <section class="min-w-0 space-y-5 rounded-2xl border border-[#E7E3D6] bg-white p-5 shadow-sm sm:p-6 xl:col-span-7" aria-labelledby="assignment-title">
+                <div class="border-b border-[#DCD8CB] pb-3">
+                    <p class="text-[10px] font-bold uppercase tracking-wide text-[#9A7A3F]">Member matching</p>
+                    <h2 id="assignment-title" class="font-display mt-1 text-base font-semibold text-[#14231C]">Member assignments</h2>
+                    <p class="mt-1 text-sm text-[#6B7568]">Choose a trainer, filter the roster by goal or experience, then save the selected members.</p>
+                </div>
+
+                <form method="get" class="flex flex-col gap-2 border-b border-[#EEEBDD] pb-4 sm:flex-row sm:items-end">
+                    <div class="min-w-0 flex-1">
+                        <label for="trainer-picker" class="mb-1.5 block text-xs font-medium text-[#4B5750]">Trainer</label>
+                        <select id="trainer-picker" name="trainer_id" class="w-full rounded-lg border border-[#DCD8CB] bg-[#FCFBF8] px-3 py-2.5 text-sm outline-none focus:border-[#1F4D3A]">
+                            {% for trainer in trainers %}<option value="{{ trainer.pk }}" {% if selected_trainer.pk == trainer.pk %}selected{% endif %}>{{ trainer.get_full_name|default:trainer.username }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="min-h-10 rounded-lg border border-[#DCD8CB] bg-[#F4F2EA] px-4 py-2.5 text-sm font-semibold text-[#284C3A] hover:bg-[#eae6db]">Load roster</button>
+                </form>
+
+                {% if selected_trainer %}
+                    <div class="flex flex-col gap-3 border-b border-[#EEEBDD] pb-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#1F4D3A] text-white"><i class="fa-solid fa-person-chalkboard" aria-hidden="true"></i></span>
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-[#14231C]">{{ selected_trainer.get_full_name|default:selected_trainer.username }}</p>
+                                <p class="mt-0.5 truncate text-xs text-[#6B7568]">{{ selected_trainer.trainer_profile.expertise|default:'Trainer profile available in roster' }}</p>
+                            </div>
+                        </div>
+                        <span class="w-fit rounded-full bg-white px-3 py-1.5 text-xs font-medium text-[#4B5750]">{{ selected_trainer.assigned_member_count }} currently assigned</span>
+                    </div>
+
+                    <form method="post" class="min-w-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="save_assignments">
+                        <input type="hidden" name="trainer" value="{{ selected_trainer.pk }}">
+                        {% if assignment_form.non_field_errors %}<div class="border-b border-red-100 bg-red-50 px-4 py-3 text-xs text-red-800">{{ assignment_form.non_field_errors }}</div>{% endif %}
+                        {% for error in assignment_form.members.errors %}<div class="border-b border-red-100 bg-red-50 px-4 py-3 text-xs text-red-800">{{ error }}</div>{% endfor %}
+                        <div class="grid grid-cols-1 gap-2 border-b border-[#E7E3D6] bg-[#FCFBF8] py-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
+                            <label class="relative block">
+                                <span class="sr-only">Search members by name or goal</span>
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[#8B8577]" aria-hidden="true"></i>
+                                <input id="member-search" type="search" placeholder="Search name or fitness goal" class="w-full rounded-lg border border-[#DCD8CB] bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[#1F4D3A]">
+                            </label>
+                            <label>
+                                <span class="sr-only">Filter by experience level</span>
+                                <select id="experience-filter" class="w-full rounded-lg border border-[#DCD8CB] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#1F4D3A]">
+                                    <option value="">All experience levels</option>
+                                    <option value="beginner">Beginner</option>
+                                    <option value="intermediate">Intermediate</option>
+                                    <option value="expert">Expert</option>
+                                    <option value="advanced">Advanced</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between gap-3 py-3 text-xs text-[#6B7568]">
+                            <span><strong id="member-result-count" class="font-semibold text-[#14231C]">{{ members|length }}</strong> members shown</span>
+                            <span class="hidden sm:inline">Filters do not change saved selections.</span>
+                        </div>
+                        <div id="member-assignment-list" class="max-h-[32rem] divide-y divide-[#EEEBDD] overflow-y-auto border-y border-[#EEEBDD]">
+                            {% for member in members %}
+                                <label data-assignment-member data-name="{{ member.get_full_name|default:member.username|lower }} {{ member.username|lower }}" data-goal="{{ member.actual_goal|default:''|lower }}" data-experience="{{ member.exercise_experience|default:''|lower }}" class="flex cursor-pointer items-start gap-3 px-4 py-3.5 transition-colors hover:bg-[#FCFBF8]">
+                                    <input type="checkbox" name="members" value="{{ member.pk }}" {% if member.pk in selected_member_ids %}checked{% endif %} class="mt-1 h-4 w-4 rounded border-[#B8B4A8] text-[#1F4D3A] focus:ring-[#1F4D3A]">
+                                    <span class="min-w-0 flex-1">
+                                        <span class="flex flex-wrap items-center justify-between gap-2">
+                                            <span class="text-sm font-medium text-[#14231C]">{{ member.get_full_name|default:member.username }} <span class="text-xs font-normal text-[#8B8577]">@{{ member.username }}</span></span>
+                                            <span class="text-[10px] font-medium text-[#6B7568]">{{ member.plan.name|default:'No plan' }}</span>
+                                        </span>
+                                        <span class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[#6B7568]">
+                                            <span><i class="fa-solid fa-bullseye mr-1 text-[#9A7A3F]" aria-hidden="true"></i>{{ member.actual_goal|default:'Goal not set' }}</span>
+                                            <span><i class="fa-solid fa-chart-simple mr-1 text-[#1F4D3A]" aria-hidden="true"></i>{{ member.exercise_experience|default:'Experience not set' }}</span>
+                                        </span>
+                                    </span>
+                                </label>
+                            {% empty %}
+                                <p class="px-4 py-10 text-center text-sm text-[#6B7568]">No gym members are available to assign.</p>
+                            {% endfor %}
+                        </div>
+                        <div class="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                            <p class="text-xs text-[#6B7568]">Saving replaces this trainer’s current roster with checked members.</p>
+                            <button type="submit" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#1F4D3A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#173c2d]"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save assignments</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="rounded-xl border border-dashed border-[#DCD8CB] bg-white px-5 py-14 text-center">
+                        <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#F4F2EA] text-[#9A7A3F]"><i class="fa-solid fa-people-arrows-left-right" aria-hidden="true"></i></span>
+                        <p class="mt-3 text-sm font-semibold text-[#14231C]">Choose a trainer to manage assignments</p>
+                        <p class="mt-1 text-xs text-[#6B7568]">Create a trainer profile or select someone from the roster.</p>
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+    </main>
+
+    <script>
+        const memberSearch = document.getElementById('member-search');
+        const experienceFilter = document.getElementById('experience-filter');
+        const memberCards = [...document.querySelectorAll('[data-assignment-member]')];
+        const memberCount = document.getElementById('member-result-count');
+
+        function filterMembers() {
+            if (!memberSearch || !experienceFilter || !memberCount) return;
+            const query = memberSearch.value.trim().toLowerCase();
+            const experience = experienceFilter.value;
+            let shown = 0;
+            memberCards.forEach((card) => {
+                const matches = `${card.dataset.name} ${card.dataset.goal}`.includes(query)
+                    && (!experience || card.dataset.experience.includes(experience));
+                card.classList.toggle('hidden', !matches);
+                if (matches) shown += 1;
+            });
+            memberCount.textContent = shown;
+        }
+
+        memberSearch?.addEventListener('input', filterMembers);
+        experienceFilter?.addEventListener('change', filterMembers);
+    </script>
+</body>
+</html>

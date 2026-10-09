@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">`
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Tracking &amp; Logging Suite — Caliber Labs</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] antialiased flex flex-col pb-20 md:pl-64 md:pb-0">
+    {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
+    <header class="min-h-20 bg-white border-b border-[#E7E3D6] px-4 sm:px-8 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="bg-[#1F4D3A] w-10 h-10 rounded-xl text-white flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-fire text-sm" aria-hidden="true"></i>
+            </div>
+            <div class="min-w-0">
+                <span class="font-display font-bold text-sm sm:text-base tracking-tight text-[#14231C] block truncate">Caliber Labs</span>
+                <span class="text-[10px] text-[#6B7568]">Daily activity journal</span>
+            </div>
+        </div>
+        <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-[#F4F2EA] border border-[#E7E3D6] rounded-xl text-xs font-semibold text-[#1F4D3A] hover:bg-[#eae6db] shrink-0">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span class="hidden sm:inline">Dashboard</span>
+        </a>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-wide text-[#9A7A3F]">Member journal</p>
+                <h1 class="font-display text-2xl font-bold text-[#14231C] mt-1">Daily Tracking</h1>
+                <p class="text-xs text-[#6B7568] mt-1">Record meals, strength sessions, and cardio in one place.</p>
+            </div>
+            <span class="inline-flex items-center gap-2 w-fit rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-[#1F4D3A]">
+                <i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ today|date:"M j, Y" }}
+            </span>
+        </div>
+
+        {% if messages %}
+            <div class="space-y-2" aria-live="polite">
+                {% for message in messages %}
+                    <div class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-900" role="status">
+                        <i class="fa-solid fa-circle-exclamation mt-0.5" aria-hidden="true"></i><span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6 items-stretch">
+            <!-- Meal log -->
+            <section class="order-1 h-full bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
+                    <div class="flex items-center gap-3">
+                        <span class="w-11 h-11 rounded-2xl bg-amber-50 text-[#9A7A3F] flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils" aria-hidden="true"></i></span>
+                        <div>
+                            <h2 class="font-display text-lg font-bold text-[#14231C]">Upload Meal Log</h2>
+                            <p class="text-[11px] text-[#6B7568] mt-0.5">Track food and meal photos.</p>
+                        </div>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data" class="space-y-3 text-xs">
+                        {% csrf_token %}
+                        <input type="hidden" name="log_type" value="meal">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label for="meal-date" class="block font-semibold text-[#14231C] mb-1.5">Meal date</label>
+                                <input id="meal-date" type="date" name="log_date" value="{{ today }}" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            </div>
+                            <div>
+                                <label for="meal-type" class="block font-semibold text-[#14231C] mb-1.5">Meal type</label>
+                                <select id="meal-type" name="meal_type" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                                    {% for value, label in meal_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="meal-description" class="block font-semibold text-[#14231C] mb-1.5">Food and nutrition notes</label>
+                            <textarea id="meal-description" name="description" rows="3" required class="w-full resize-y bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]"></textarea>
+                        </div>
+                        <div>
+                            <label for="meal-photo" class="block font-semibold text-[#14231C] mb-1.5">Meal photo <span class="font-normal text-[#8B8577]">(optional)</span></label>
+                            <input id="meal-photo" type="file" name="receipt_image" accept="image/*" class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl p-2.5 text-xs">
+                        </div>
+                        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 bg-[#1F4D3A] text-white font-semibold py-3 rounded-xl shadow-sm hover:bg-[#173c2d] transition-colors">
+                            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save meal log
+                        </button>
+                    </form>
+
+                    <div class="border-t border-[#E7E3D6] pt-4 space-y-3">
+                        <h3 class="font-display font-bold text-sm text-[#14231C]">Recent meals</h3>
+                        <div class="space-y-2 max-h-52 overflow-y-auto pr-1">
+                            {% for meal in meal_logs %}
+                                <article class="p-3 bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        {% if meal.receipt_image %}<a href="{{ meal.receipt_image.url }}" target="_blank" rel="noopener" aria-label="Open meal image"><img src="{{ meal.receipt_image.url }}" alt="Meal log" class="w-10 h-10 rounded-lg object-cover border border-[#E7E3D6] shrink-0"></a>{% endif %}
+                                        <div class="min-w-0"><p class="font-semibold text-[#14231C]">{{ meal.meal_type }} <span class="font-normal text-[#6B7568]">· {{ meal.date|date:"M j, Y" }}</span></p><p class="text-[11px] text-[#6B7568] mt-0.5 break-words">{{ meal.description }}</p></div>
+                                    </div>
+                                </article>
+                            {% empty %}<p class="text-[11px] text-[#8B8577] italic">No meal logs recorded yet.</p>{% endfor %}
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Cardio log -->
+                <section class="order-3 md:col-span-2 grid grid-cols-1 xl:grid-cols-2 xl:gap-x-8 gap-y-5 bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-6 shadow-sm">
+                    <div class="flex items-center gap-3 xl:col-span-2">
+                        <span class="w-11 h-11 rounded-2xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i></span>
+                        <div>
+                            <h2 class="font-display text-lg font-bold text-[#14231C]">Cardio Session Log</h2>
+                            <p class="text-[11px] text-[#6B7568] mt-0.5">Capture duration and effort.</p>
+                        </div>
+                    </div>
+
+                    <form method="POST" class="space-y-3 text-xs">
+                        {% csrf_token %}
+                        <input type="hidden" name="log_type" value="cardio">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label for="cardio-date" class="block font-semibold text-[#14231C] mb-1.5">Session date</label>
+                                <input id="cardio-date" type="date" name="log_date" value="{{ today }}" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            </div>
+                            <div>
+                                <label for="cardio-activity" class="block font-semibold text-[#14231C] mb-1.5">Activity</label>
+                                <select id="cardio-activity" name="activity" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                                    <option value="" selected disabled>Select activity</option>
+                                    {% for activity in cardio_activities %}<option value="{{ activity }}">{{ activity }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="cardio-duration" class="block font-semibold text-[#14231C] mb-1.5">Duration (minutes)</label>
+                                <input id="cardio-duration" type="number" name="duration_minutes" min="1" max="300" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            </div>
+                            <div>
+                                <label for="cardio-intensity" class="block font-semibold text-[#14231C] mb-1.5">Intensity</label>
+                                <select id="cardio-intensity" name="intensity" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                                    <option value="" selected disabled>Select intensity</option>
+                                    {% for intensity in cardio_intensities %}<option value="{{ intensity }}">{{ intensity }}</option>{% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="cardio-notes" class="block font-semibold text-[#14231C] mb-1.5">Notes <span class="font-normal text-[#8B8577]">(optional)</span></label>
+                            <input id="cardio-notes" type="text" name="notes" maxlength="250" class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                        </div>
+                        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 bg-[#1F4D3A] text-white font-semibold py-3 rounded-xl shadow-sm hover:bg-[#173c2d] transition-colors">
+                            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save cardio session
+                        </button>
+                    </form>
+
+                    <div class="border-t border-[#E7E3D6] pt-4 space-y-3 xl:border-t-0 xl:border-l xl:pl-6 xl:pt-0">
+                        <h3 class="font-display font-bold text-sm text-[#14231C]">Recent cardio</h3>
+                        <div class="space-y-2 max-h-44 overflow-y-auto pr-1">
+                            {% for session in cardio_logs %}
+                                <article class="p-3 bg-sky-50/60 border border-sky-100 rounded-xl flex items-center justify-between gap-3 text-xs">
+                                    <div><p class="font-semibold text-[#14231C]">{{ session.activity }} <span class="font-normal text-[#6B7568]">· {{ session.date|date:"M j, Y" }}</span></p><p class="text-[11px] text-[#6B7568] mt-0.5">{{ session.duration_minutes }} min · {{ session.intensity }}{% if session.notes %} · {{ session.notes }}{% endif %}</p></div>
+                                    <i class="fa-solid fa-person-running text-sky-700" aria-hidden="true"></i>
+                                </article>
+                            {% empty %}<p class="text-[11px] text-[#8B8577] italic">No cardio sessions recorded yet.</p>{% endfor %}
+                        </div>
+                    </div>
+                </section>
+
+            <!-- Strength log -->
+            <section class="order-2 h-full bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
+                <div class="flex items-center gap-3">
+                    <span class="w-11 h-11 rounded-2xl bg-emerald-50 text-[#1F4D3A] flex items-center justify-center shrink-0"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 class="font-display text-lg font-bold text-[#14231C]">Strength &amp; Muscle Workout Log</h2>
+                        <p class="text-[11px] text-[#6B7568] mt-0.5">Build your session with as many exercise rows as you need.</p>
+                    </div>
+                </div>
+
+                <form method="POST" class="space-y-4 text-xs">
+                    {% csrf_token %}
+                    <input type="hidden" name="log_type" value="workout">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label for="workout-date" class="block font-semibold text-[#14231C] mb-1.5">Workout date</label>
+                            <input id="workout-date" type="date" name="log_date" value="{{ today }}" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                        </div>
+                        <div>
+                            <label for="workout-status" class="block font-semibold text-[#14231C] mb-1.5">Session</label>
+                            <select id="workout-status" name="did_workout" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                                <option value="yes">Strength workout</option><option value="no">Rest day</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label for="muscle-split" class="block font-semibold text-[#14231C] mb-1.5">Muscle split</label>
+                            <select id="muscle-split" name="muscle_split" class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                                <option value="" selected>Select muscle focus</option>
+                                {% for split in muscle_splits %}<option value="{{ split }}">{{ split }}</option>{% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-[#E7E3D6] bg-[#FCFBF8] p-3 sm:p-4 space-y-2.5">
+                        <div class="flex flex-wrap items-end justify-between gap-3">
+                            <div><h3 class="font-semibold text-[#14231C]">Exercise breakdown</h3><p class="text-[10px] text-[#6B7568] mt-0.5">Select an exercise, sets, and rep range for each row.</p></div>
+                            <button id="add-exercise" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-[#1F4D3A] text-[11px] font-semibold hover:bg-emerald-100 transition-colors"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add exercise</button>
+                        </div>
+                        <div class="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_5rem_6rem_2rem] gap-2 px-2 text-[10px] font-semibold uppercase text-[#8B8577]"><span>Exercise</span><span>Sets</span><span>Reps</span><span></span></div>
+                        <div id="exercise-rows" class="space-y-2">
+                            <div data-exercise-row class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_5rem_6rem_2rem] gap-2 items-end rounded-xl border border-[#EEEBDD] bg-white p-2">
+                                <div class="min-w-0"><label for="exercise-name-1" class="block sm:sr-only text-[10px] font-semibold text-[#6B7568] mb-1">Exercise</label><select id="exercise-name-1" name="exercise_name" class="min-w-0 w-full bg-[#FCFBF8] border border-[#E7E3D6] rounded-lg px-2.5 py-2.5 text-[11px] outline-none focus:border-[#1F4D3A]"><option value="">Select exercise</option>{% for exercise in workout_exercises %}<option value="{{ exercise }}">{{ exercise }}</option>{% endfor %}</select></div>
+                                <div><label for="exercise-sets-1" class="block sm:sr-only text-[10px] font-semibold text-[#6B7568] mb-1">Sets</label><select id="exercise-sets-1" name="sets" class="w-full bg-[#FCFBF8] border border-[#E7E3D6] rounded-lg px-2 py-2.5 text-[11px] outline-none focus:border-[#1F4D3A]"><option value="">Sets</option>{% for set_count in set_options %}<option value="{{ set_count }}">{{ set_count }}</option>{% endfor %}</select></div>
+                                <div><label for="exercise-reps-1" class="block sm:sr-only text-[10px] font-semibold text-[#6B7568] mb-1">Rep range</label><select id="exercise-reps-1" name="rep_range" class="w-full bg-[#FCFBF8] border border-[#E7E3D6] rounded-lg px-2 py-2.5 text-[11px] outline-none focus:border-[#1F4D3A]"><option value="">Reps</option>{% for rep_range in rep_ranges %}<option value="{{ rep_range }}">{{ rep_range }}</option>{% endfor %}</select></div>
+                                <button type="button" data-remove-exercise aria-label="Remove exercise row" class="w-8 h-9 rounded-lg text-[#8B8577] hover:bg-red-50 hover:text-red-700 transition-colors"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                                <div data-exercise-guide class="hidden col-span-full rounded-lg bg-emerald-50 px-3 py-2.5 text-[11px] text-[#315B45]" aria-live="polite"><i class="fa-solid fa-person-circle-check mr-1.5" aria-hidden="true"></i><span data-guide-description></span> <a data-guide-link href="#" target="_blank" rel="noopener noreferrer" class="ml-1 inline-flex items-center gap-1 font-semibold underline underline-offset-2">Watch form reference <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-[#8B8577]">Maximum 20 exercises per session.</p>
+                    </div>
+
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 bg-[#1F4D3A] text-white font-semibold py-3 rounded-xl shadow-sm hover:bg-[#173c2d] transition-colors"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save strength session</button>
+                </form>
+
+                <div class="border-t border-[#E7E3D6] pt-4 space-y-3">
+                    <h3 class="font-display font-bold text-sm text-[#14231C]">Recent strength sessions</h3>
+                    <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                        {% for workout in workout_logs %}
+                            <article class="p-3 bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl">
+                                <div class="flex items-center justify-between gap-3"><p class="font-semibold text-[#14231C]">{% if workout.did_workout %}{{ workout.muscle_split }}{% else %}Rest day{% endif %}</p><time class="text-[10px] text-[#8B8577]">{{ workout.date|date:"M j, Y" }}</time></div>
+                                {% if workout.did_workout %}
+                                    <ul class="mt-2 space-y-1 text-[11px] text-[#6B7568]">
+                                        {% for exercise in workout.exercises.all %}<li>{{ exercise.exercise_name }} · {{ exercise.sets }} sets x {{ exercise.rep_range }} reps</li>
+                                        {% empty %}{% if workout.exercise_details %}<li class="whitespace-pre-line">{{ workout.exercise_details }}</li>{% else %}<li>Exercise details unavailable.</li>{% endif %}{% endfor %}
+                                    </ul>
+                                {% endif %}
+                            </article>
+                        {% empty %}<p class="text-[11px] text-[#8B8577] italic">No strength sessions recorded yet.</p>{% endfor %}
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <template id="exercise-row-template">
+        <div data-exercise-row class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_5rem_6rem_2rem] gap-2 items-end rounded-xl border border-[#EEEBDD] bg-white p-2">
+            <div class="min-w-0"><label data-label="exercise" class="block sm:sr-only text-[10px] font-semibold text-[#6B7568] mb-1">Exercise</label><select name="exercise_name" class="min-w-0 w-full bg-[#FCFBF8] border border-[#E7E3D6] rounded-lg px-2.5 py-2.5 text-[11px] outline-none focus:border-[#1F4D3A]"><option value="">Select exercise</option>{% for exercise in workout_exercises %}<option value="{{ exercise }}">{{ exercise }}</option>{% endfor %}</select></div>
+            <div><label data-label="sets" class="block sm:sr-only text-[10px] font-semibold text-[#6B7568] mb-1">Sets</label><select name="sets" class="w-full bg-[#FCFBF8] border border-[#E7E3D6] rounded-lg px-2 py-2.5 text-[11px] outline-none focus:border-[#1F4D3A]"><option value="">Sets</option>{% for set_count in set_options %}<option value="{{ set_count }}">{{ set_count }}</option>{% endfor %}</select></div>
+            <div><label data-label="reps" class="block sm:sr-only text-[10px] font-semibold text-[#6B7568] mb-1">Rep range</label><select name="rep_range" class="w-full bg-[#FCFBF8] border border-[#E7E3D6] rounded-lg px-2 py-2.5 text-[11px] outline-none focus:border-[#1F4D3A]"><option value="">Reps</option>{% for rep_range in rep_ranges %}<option value="{{ rep_range }}">{{ rep_range }}</option>{% endfor %}</select></div>
+            <button type="button" data-remove-exercise aria-label="Remove exercise row" class="w-8 h-9 rounded-lg text-[#8B8577] hover:bg-red-50 hover:text-red-700 transition-colors"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            <div data-exercise-guide class="hidden col-span-full rounded-lg bg-emerald-50 px-3 py-2.5 text-[11px] text-[#315B45]" aria-live="polite"><i class="fa-solid fa-person-circle-check mr-1.5" aria-hidden="true"></i><span data-guide-description></span> <a data-guide-link href="#" target="_blank" rel="noopener noreferrer" class="ml-1 inline-flex items-center gap-1 font-semibold underline underline-offset-2">Watch form reference <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>
+        </div>
+    </template>
+
+    {{ exercise_guides|json_script:"exercise-guides-data" }}
+    <script>
+        const exerciseRows = document.getElementById('exercise-rows');
+        const exerciseTemplate = document.getElementById('exercise-row-template');
+        const addExerciseButton = document.getElementById('add-exercise');
+        const exerciseGuides = JSON.parse(document.getElementById('exercise-guides-data').textContent);
+        const exerciseGuidesByName = Object.fromEntries(exerciseGuides.map((guide) => [guide.name, guide]));
+        let nextExerciseId = 1;
+
+        addExerciseButton.addEventListener('click', () => {
+            if (exerciseRows.children.length >= 20) return;
+            nextExerciseId += 1;
+            const row = exerciseTemplate.content.firstElementChild.cloneNode(true);
+            row.querySelectorAll('[data-label]').forEach((label) => {
+                const field = label.dataset.label;
+                const id = `exercise-${field}-${nextExerciseId}`;
+                label.htmlFor = id;
+                row.querySelector(`[name="${field === 'exercise' ? 'exercise_name' : field === 'sets' ? 'sets' : 'rep_range'}"]`).id = id;
+                if (field === 'exercise') label.textContent = `Exercise ${nextExerciseId}`;
+            });
+            exerciseRows.appendChild(row);
+            addExerciseButton.disabled = exerciseRows.children.length >= 20;
+        });
+
+        exerciseRows.addEventListener('click', (event) => {
+            const removeButton = event.target.closest('[data-remove-exercise]');
+            if (!removeButton) return;
+            removeButton.closest('[data-exercise-row]').remove();
+            addExerciseButton.disabled = false;
+        });
+
+        exerciseRows.addEventListener('change', (event) => {
+            if (!event.target.matches('[name="exercise_name"]')) return;
+            const guidePanel = event.target.closest('[data-exercise-row]').querySelector('[data-exercise-guide]');
+            const guide = exerciseGuidesByName[event.target.value];
+            guidePanel.classList.toggle('hidden', !guide);
+            if (!guide) return;
+            guidePanel.querySelector('[data-guide-description]').textContent = guide.description;
+            guidePanel.querySelector('[data-guide-link]').href = guide.video_url;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout &amp; Diet Management — Caliber Labs</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+        .panel-section { display: none; }
+        .panel-section.active { display: block; animation: riseIn 0.35s ease-out forwards; }
+        @keyframes riseIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Understated scrollbar */
+        ::-webkit-scrollbar { width: 7px; height: 7px; }
+        ::-webkit-scrollbar-track { background: #F3F1EA; }
+        ::-webkit-scrollbar-thumb { background: #C7C2B2; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #1F4D3A; }
+
+        .nav-btn { transition: background-color .18s ease, color .18s ease; }
+    </style>
+</head>
+<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] antialiased selection:bg-[#1F4D3A] selection:text-white flex overflow-hidden">
+    {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=False %}
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="hidden md:flex w-72 bg-white border-r border-[#E7E3D6] flex-col justify-between z-30 select-none">
+        <div>
+            <!-- Brand Header -->
+            <div class="h-24 flex items-center px-7 border-b border-[#E7E3D6] space-x-3.5">
+                <div class="bg-[#1F4D3A] w-11 h-11 rounded-lg text-white shadow-sm flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-sliders text-base"></i>
+                </div>
+                <div>
+                    <span class="font-display font-700 text-sm tracking-tight text-[#14231C] block leading-tight">Caliber Labs</span>
+                    <span class="block text-[10px] tracking-wide text-[#9A7A3F] font-semibold mt-0.5">Management Suite</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="p-4 space-y-6">
+                <div>
+                    <div class="px-3 text-[10px] font-semibold tracking-wide text-[#8B8577] uppercase mb-2.5">Control Panel</div>
+                    <nav class="space-y-1">
+                        <button onclick="switchPanel('list')" id="btn-list" class="panel-btn nav-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg bg-[#1F4D3A] text-white">
+                            <i class="fa-solid fa-list-check w-5 mr-3"></i> Active Workouts
+                        </button>
+                        <button onclick="switchPanel('create')" id="btn-create" class="panel-btn nav-btn w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA] hover:text-[#14231C]">
+                            <i class="fa-solid fa-circle-plus w-5 mr-3 text-[#1F4D3A]"></i> Add New Workout
+                        </button>
+                    </nav>
+                    <nav class="mt-5 space-y-1 border-t border-[#E7E3D6] pt-4" aria-label="Gym operations">
+                        <a href="{% url 'manage_workouts' %}" aria-current="page" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg bg-[#F4F2EA] text-[#1F4D3A]"><i class="fa-solid fa-dumbbell w-5 mr-3" aria-hidden="true"></i> Workout Plans</a>
+                        <a href="{% url 'manage_diets' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-bowl-food w-5 mr-3 text-[#A87C3F]" aria-hidden="true"></i> Nutrition Plans</a>
+                        <a href="{% url 'manage_attendance' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-fingerprint w-5 mr-3 text-[#6B7D74]" aria-hidden="true"></i> Attendance</a>
+                        <a href="{% url 'exercise_directory' %}" class="w-full flex items-center px-3.5 py-3 text-[13px] font-semibold rounded-lg text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-book-open w-5 mr-3 text-[#9A7A3F]" aria-hidden="true"></i> Exercise Directory</a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Footer / Back to Dashboard -->
+        <div class="p-4 border-t border-[#E7E3D6] space-y-3">
+            <a href="{% url 'dashboard' %}" class="w-full flex items-center justify-center px-4 py-3 text-xs font-semibold text-[#1F4D3A] bg-[#F4F2EA] hover:bg-[#eae6db] rounded-xl border border-[#E7E3D6] transition-all">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Core Dashboard
+            </a>
+            <div class="flex items-center justify-between text-xs bg-[#F4F2EA] p-3.5 rounded-xl border border-[#E7E3D6]">
+                <div class="truncate">
+                    <span class="block font-semibold text-[#14231C] truncate text-xs">{{ request.user.username }}</span>
+                    <span class="text-[10px] text-[#1F4D3A] font-semibold tracking-wide">Authorized Staff</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- RIGHT MAIN CONTENT AREA -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        <!-- Top Navbar -->
+        <header class="min-h-20 md:h-24 bg-white/90 backdrop-blur border-b border-[#E7E3D6] px-4 sm:px-6 lg:px-8 flex justify-between items-center gap-4 z-20">
+            <div>
+                <h1 id="panel-title" class="font-display text-xl font-semibold text-[#14231C] tracking-tight">Workout Plans Directory</h1>
+                <p id="panel-subtitle" class="mt-1 text-sm text-[#6B7568]">Manage and oversee customized exercise schedules assigned to members.</p>
+            </div>
+            <span class="bg-[#1F4D3A]/10 text-[#1F4D3A] border border-[#1F4D3A]/20 text-[11px] font-semibold px-4 py-2 rounded-full">
+                Secure RBAC Module
+            </span>
+        </header>
+
+        <!-- Dynamic Content Body -->
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
+            
+            <!-- SECTION 1: ACTIVE WORKOUTS LIST -->
+            <div id="section-list" class="panel-section active space-y-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-display text-base font-semibold text-[#14231C]">Assigned Workout Routines</h3>
+                    <button onclick="switchPanel('create')" class="px-5 py-2.5 bg-[#1F4D3A] hover:bg-[#173c2d] text-xs font-semibold text-white rounded-xl shadow-sm transition-all">
+                        <i class="fa-solid fa-plus mr-1.5"></i> Create Workout
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+                    {% for w in workouts %}
+                        <article class="flex h-full min-w-0 flex-col justify-between rounded-xl border border-[#E7E3D6] bg-white p-5 shadow-sm">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <h4 class="font-semibold text-[#14231C] text-sm">{{ w.title }}</h4>
+                                    <span class="text-[10px] bg-[#F4F2EA] text-[#6B7568] font-medium px-2.5 py-1 rounded-md border border-[#E7E3D6]">{{ w.created_at|date:"M d, Y" }}</span>
+                                </div>
+                                <p class="mt-3 break-words text-sm leading-relaxed text-[#6B7568]">{{ w.description }}</p>
+                            </div>
+                            <div class="mt-5 flex items-center justify-between gap-3 border-t border-[#EEEBE0] pt-4 text-sm">
+                                <span class="text-[#8B8577] font-semibold uppercase text-[10px]">Assigned Entity</span>
+                                <span class="bg-[#F4F2EA] text-[#1F4D3A] font-semibold px-3 py-1 rounded-lg border border-[#E7E3D6]">
+                                    <i class="fa-solid fa-user-tag mr-1.5"></i> {{ w.member.username }}
+                                </span>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <div class="col-span-2 text-center py-16 text-[#8B8577] text-xs italic bg-white rounded-2xl border border-dashed border-[#E7E3D6]">
+                            No workout records found in the secure database.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- SECTION 2: CREATE NEW WORKOUT FORM -->
+            <div id="section-create" class="panel-section space-y-6 max-w-xl">
+                <div class="bg-white border border-[#E7E3D6] rounded-2xl p-8 shadow-sm">
+                    <h3 class="font-display text-lg font-semibold text-[#14231C] mb-1">Create New Workout Plan</h3>
+                    <p class="mb-6 text-sm text-[#6B7568]">Assign a specialized exercise routine to any gym member securely.</p>
+                    
+                    <form method="POST" class="space-y-4 text-sm">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block font-semibold text-[#14231C] mb-1.5">Workout Title</label>
+                            <input type="text" name="title" required placeholder="e.g., Three-Day Strength Plan" class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-4 py-3 text-sm text-[#14231C] focus:outline-none focus:border-[#1F4D3A] transition-colors">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-[#14231C] mb-1.5">Description &amp; Routine Details</label>
+                            <textarea name="description" rows="4" required placeholder="Describe sets, reps, and exercise schedules..." class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-4 py-3 text-sm text-[#14231C] focus:outline-none focus:border-[#1F4D3A] transition-colors"></textarea>
+                        </div>
+                        <div>
+                            <label for="workout-member" class="block font-semibold text-[#14231C] mb-1.5">Assign to Member</label>
+                            <select id="workout-member" name="member_id" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-4 py-3 text-sm text-[#14231C] focus:outline-none focus:border-[#1F4D3A] transition-colors">
+                                <option value="" selected disabled>Select a member</option>
+                                {% for member in members %}
+                                    <option value="{{ member.pk }}">{{ member.get_full_name|default:member.username }}{% if member.email %} · {{ member.email }}{% endif %}</option>
+                                {% empty %}
+                                    <option value="" disabled>No gym members available</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="pt-4 flex justify-end space-x-3">
+                            <button type="button" onclick="switchPanel('list')" class="px-5 py-2.5 bg-[#F4F2EA] hover:bg-[#eae6db] font-semibold text-[#4B5750] rounded-xl transition-all border border-[#E7E3D6]">Cancel</button>
+                            <button type="submit" class="px-5 py-2.5 bg-[#1F4D3A] hover:bg-[#173c2d] font-semibold text-white rounded-xl shadow-sm transition-all">Save Workout Plan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- JavaScript for Sidebar Tab Switching -->
+    <script>
+        function switchPanel(panelId) {
+            document.querySelectorAll('.panel-section').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.panel-btn').forEach(btn => {
+                btn.classList.remove('bg-[#1F4D3A]', 'text-white');
+                btn.classList.add('text-[#4B5750]');
+            });
+            document.getElementById('section-' + panelId).classList.add('active');
+            
+            const activeBtn = document.getElementById('btn-' + panelId);
+            if(activeBtn) {
+                activeBtn.classList.remove('text-[#4B5750]');
+                activeBtn.classList.add('bg-[#1F4D3A]', 'text-white');
+            }
+
+            const headers = {
+                'list': ['Workout Plans Directory', 'Manage and oversee customized exercise schedules assigned to members.'],
+                'create': ['Create New Workout', 'Define and assign fresh training modules to registered gym members.']
+            };
+            if(headers[panelId]) {
+                document.getElementById('panel-title').innerText = headers[panelId][0];
+                document.getElementById('panel-subtitle').innerText = headers[panelId][1];
+            }
+        }
+    </script>
+</body>
+</html>

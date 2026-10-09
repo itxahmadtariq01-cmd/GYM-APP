@@ -1,0 +1,73 @@
+{% with user_role=request.user.role.name|default:'Member'|lower %}
+{% if desktop_sidebar %}
+<aside class="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col justify-between border-r border-[#E7E3D6] bg-white md:flex" aria-label="Primary navigation">
+    <div>
+        <a href="{% url 'dashboard' %}" class="flex h-20 items-center gap-3 border-b border-[#E7E3D6] px-6">
+            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1F4D3A] text-white"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i></span>
+            <span><strong class="block font-display text-sm text-[#14231C]">Caliber Labs</strong><span class="text-[10px] text-[#6B7568]">Gym operations</span></span>
+        </a>
+        <nav class="space-y-1 p-3" aria-label="Application pages">
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#1F4D3A] hover:bg-[#F4F2EA]"><i class="fa-solid fa-gauge-high w-5 text-center" aria-hidden="true"></i>Dashboard</a>
+            {% if request.user.is_staff or request.user.is_superuser or user_role == 'admin' or user_role == 'trainer' %}
+                <a href="{% url 'manage_workouts' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-dumbbell w-5 text-center text-[#1F4D3A]" aria-hidden="true"></i>Workout plans</a>
+                <a href="{% url 'manage_diets' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-bowl-food w-5 text-center text-[#A87C3F]" aria-hidden="true"></i>Nutrition plans</a>
+                <a href="{% url 'manage_attendance' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-fingerprint w-5 text-center text-[#6B7D74]" aria-hidden="true"></i>Attendance</a>
+                {% if user_role == 'admin' or request.user.is_staff or request.user.is_superuser %}
+                    <a href="{% url 'manage_trainers' %}" class="flex items-center gap-3 rounded-lg border border-[#D8C89A] bg-[#FCFBF8] px-3 py-2.5 text-sm font-semibold text-[#765A2D] hover:bg-[#F3EBD5]"><i class="fa-solid fa-people-group w-5 text-center" aria-hidden="true"></i>Trainer management</a>
+                    <a href="{% url 'admin_payments' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-receipt w-5 text-center text-[#A87C3F]" aria-hidden="true"></i>Payments</a>
+                    <a href="/admin/" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-shield-halved w-5 text-center text-[#A6402E]" aria-hidden="true"></i>Django Admin</a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'member_logging' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-clipboard-list w-5 text-center text-[#1F4D3A]" aria-hidden="true"></i>Daily logging</a>
+            {% endif %}
+        </nav>
+        <section class="mx-3 mt-5 rounded-xl border border-[#D8C89A] border-l-4 border-l-[#A87C3F] bg-[#FCFBF8] p-3" aria-labelledby="featured-tools-title">
+            <div class="mb-2 flex items-center justify-between gap-2 px-1">
+                <h2 id="featured-tools-title" class="text-[10px] font-bold uppercase tracking-wide text-[#765A2D]">Featured tools</h2>
+                <span class="rounded-full bg-[#F3EBD5] px-2 py-0.5 text-[9px] font-bold uppercase text-[#765A2D]">Plus</span>
+            </div>
+            <nav class="space-y-1" aria-label="Featured tools">
+                <a href="{% url 'exercise_directory' %}" class="group flex items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-[#284C3A] shadow-sm ring-1 ring-[#E7E3D6] transition-colors hover:bg-emerald-50">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F2EA] text-[#A87C3F] transition-colors group-hover:bg-[#F3EBD5]"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
+                    <span>Exercise directory</span><span class="ml-auto text-[9px] font-bold uppercase text-[#9A7A3F]">Guide</span>
+                </a>
+                {% if not request.user.is_staff and not request.user.is_superuser and user_role != 'admin' and user_role != 'trainer' %}
+                <a href="{% url 'ai_workouts' %}" class="group flex items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-[#284C3A] shadow-sm ring-1 ring-[#E7E3D6] transition-colors hover:bg-emerald-50">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3EBD5] text-[#9A7A3F] transition-colors group-hover:bg-amber-100"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></span>
+                    <span>AI workout generator</span><span class="ml-auto rounded-full bg-[#F3EBD5] px-1.5 py-0.5 text-[9px] font-bold text-[#765A2D]">AI</span>
+                </a>
+                {% endif %}
+            </nav>
+        </section>
+    </div>
+    <div class="border-t border-[#E7E3D6] p-4">
+        <p class="truncate text-xs font-semibold text-[#14231C]">{{ request.user.get_full_name|default:request.user.username }}</p>
+        <p class="mt-0.5 text-[10px] capitalize text-[#6B7568]">{{ user_role }}</p>
+        <form action="{% url 'logout' %}" method="post" class="mt-3">
+            {% csrf_token %}
+            <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-[#A6402E] hover:bg-red-50"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>Log out</button>
+        </form>
+    </div>
+</aside>
+{% endif %}
+
+<nav class="fixed inset-x-0 bottom-0 z-50 grid {% if request.user.is_staff or request.user.is_superuser or user_role == 'admin' %}grid-cols-7{% else %}grid-cols-5{% endif %} border-t border-[#DCD8CB] bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(20,35,28,0.08)] md:hidden" aria-label="Primary navigation">
+    {% if request.user.is_staff or request.user.is_superuser or user_role == 'admin' or user_role == 'trainer' %}
+        <a href="{% url 'dashboard' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#1F4D3A]" aria-label="Dashboard"><i class="fa-solid fa-gauge-high text-base" aria-hidden="true"></i><span>Home</span></a>
+        <a href="{% url 'manage_workouts' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Workout plans"><i class="fa-solid fa-dumbbell text-base" aria-hidden="true"></i><span>Workouts</span></a>
+        <a href="{% url 'manage_diets' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Nutrition plans"><i class="fa-solid fa-bowl-food text-base" aria-hidden="true"></i><span>Nutrition</span></a>
+        <a href="{% url 'manage_attendance' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Attendance"><i class="fa-solid fa-fingerprint text-base" aria-hidden="true"></i><span>Attendance</span></a>
+        {% if user_role == 'admin' or request.user.is_staff or request.user.is_superuser %}
+            <a href="{% url 'manage_trainers' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 border-t-2 border-[#D8C89A] bg-[#FCFBF8] text-[9px] font-semibold text-[#765A2D]" aria-label="Trainer management"><i class="fa-solid fa-people-group text-base" aria-hidden="true"></i><span>Trainers</span></a>
+            <a href="{% url 'admin_payments' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Payments"><i class="fa-solid fa-receipt text-base" aria-hidden="true"></i><span>Payments</span></a>
+        {% endif %}
+        <a href="{% url 'exercise_directory' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 border-t-2 border-[#D8C89A] bg-[#FCFBF8] text-[10px] font-semibold text-[#765A2D]" aria-label="Exercise directory"><i class="fa-solid fa-book-open text-base" aria-hidden="true"></i><span>Exercises</span></a>
+    {% else %}
+        <a href="{% url 'dashboard' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#1F4D3A]" aria-label="Dashboard"><i class="fa-solid fa-gauge-high text-base" aria-hidden="true"></i><span>Home</span></a>
+        <a href="{% url 'member_logging' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Daily logging"><i class="fa-solid fa-clipboard-list text-base" aria-hidden="true"></i><span>Journal</span></a>
+        <a href="{% url 'ai_workouts' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 border-t-2 border-[#D8C89A] bg-[#FCFBF8] text-[10px] font-semibold text-[#765A2D]" aria-label="AI workout generator"><i class="fa-solid fa-wand-magic-sparkles text-base" aria-hidden="true"></i><span>AI coach</span></a>
+        <a href="{% url 'exercise_directory' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 border-t-2 border-[#D8C89A] bg-[#FCFBF8] text-[10px] font-semibold text-[#765A2D]" aria-label="Exercise directory"><i class="fa-solid fa-book-open text-base" aria-hidden="true"></i><span>Exercises</span></a>
+        <a href="{% url 'dashboard' %}#profile" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Profile"><i class="fa-solid fa-id-badge text-base" aria-hidden="true"></i><span>Profile</span></a>
+    {% endif %}
+</nav>
+{% endwith %}

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Login — Caliber Labs</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 1rem;
+            border: 1px solid #E7E3D6;
+            background-color: #F9F8F3;
+            color: #14231C;
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: #1F4D3A;
+            background-color: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(31, 77, 58, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] flex items-center justify-center p-4 antialiased selection:bg-[#1F4D3A] selection:text-white">
+
+    <!-- Main Container filling the screen nicely -->
+    <div class="max-w-5xl w-full bg-white border border-[#E7E3D6] rounded-3xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
+        
+        <!-- Left Side: Brand & Visual Panel -->
+        <div class="bg-[#1F4D3A] p-12 text-white flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-white/5 pointer-events-none"></div>
+            
+            <div>
+                <div class="bg-white/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm">
+                    <i class="fa-solid fa-bolt-lightning text-xl text-[#9A7A3F]"></i>
+                </div>
+                <h1 class="font-display text-3xl font-bold tracking-tight">Caliber Labs</h1>
+                <p class="text-xs text-emerald-200/80 mt-2">Next-Generation Gym Operations & Telemetry Platform</p>
+            </div>
+
+            <div class="space-y-4 pt-12">
+                <div class="flex items-center space-x-3 text-xs text-emerald-100/90">
+                    <i class="fa-solid fa-shield-check text-[#9A7A3F]"></i>
+                    <span>Secure Role-Based Access Control</span>
+                </div>
+                <div class="flex items-center space-x-3 text-xs text-emerald-100/90">
+                    <i class="fa-solid fa-chart-line text-[#9A7A3F]"></i>
+                    <span>Real-time Workouts & Diet Tracking</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Login Form Panel -->
+        <div class="p-10 md:p-12 flex flex-col justify-center bg-white">
+            
+            <div class="mb-8">
+                <h2 class="font-display text-2xl font-bold text-[#14231C] tracking-tight">Welcome Back</h2>
+                <p class="text-xs text-[#6B7568] mt-1">Please enter your credentials to sign in.</p>
+            </div>
+
+            <!-- Error Handling -->
+            {% if form.errors %}
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center">
+                    <i class="fa-solid fa-triangle-exclamation mr-2 text-base shrink-0"></i> Your username and password didn't match. Please try again.
+                </div>
+            {% endif %}
+
+            <!-- Login Form -->
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest mb-2">Username</label>
+                    {{ form.username }}
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest mb-2">Password</label>
+                    {{ form.password }}
+                </div>
+
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <button type="submit" class="w-full bg-[#1F4D3A] hover:bg-[#173c2d] text-white font-semibold py-3.5 rounded-2xl shadow-sm transition-all duration-200 text-xs tracking-wide flex items-center justify-center">
+                    Sign In to Dashboard <i class="fa-solid fa-arrow-right ml-2 text-xs"></i>
+                </button>
+            </form>
+
+            <!-- Signup Redirect Link -->
+            <div class="mt-6 text-center text-xs text-[#6B7568]">
+                Don't have an account yet? <a href="{% url 'signup' %}" class="text-[#1F4D3A] font-bold hover:underline">Create an Account</a>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

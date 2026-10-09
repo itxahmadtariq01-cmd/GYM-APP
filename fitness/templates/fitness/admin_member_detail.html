@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Oversight — Caliber Labs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] p-10 pb-24 md:pl-64 md:pb-10">
+    {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
+
+    <div class="max-w-5xl mx-auto space-y-6">
+        <!-- Top Navigation / Back -->
+        <div class="flex justify-between items-center">
+            <a href="{% url 'dashboard' %}" class="inline-flex items-center text-xs font-semibold text-[#1F4D3A] bg-white px-4 py-2 rounded-xl border border-[#E7E3D6] shadow-sm hover:bg-[#F9F8F3]">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Back to Command Center
+            </a>
+            <div class="flex items-center gap-2">
+                <a href="{% url 'member_daily_report' member.pk %}" class="inline-flex items-center gap-2 text-xs font-semibold text-white bg-[#1F4D3A] px-4 py-2 rounded-xl shadow-sm hover:bg-[#173c2d]">
+                    <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Full daily report
+                </a>
+                <span class="text-xs bg-white px-4 py-2 rounded-xl border border-[#E7E3D6] font-semibold text-[#9A7A3F]">
+                    {{ role }} Oversight Panel
+                </span>
+            </div>
+        </div>
+
+        <!-- Member Header Card -->
+        <div class="bg-white border border-[#E7E3D6] rounded-3xl p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-2xl bg-[#1F4D3A] flex items-center justify-center font-display font-700 text-white text-lg">
+                        {{ member.username|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <h1 class="font-display text-xl font-semibold text-[#14231C]">{{ member.username }}</h1>
+                        <p class="mt-1 text-sm text-[#6B7568]">Email: {{ member.email|default:"Not provided" }} | Joined: {{ member.date_joined|date:"Y-m-d" }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="px-3 py-1.5 rounded-full text-xs font-semibold {% if member.is_active %}bg-green-50 text-green-700 border border-green-200{% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+                    {% if member.is_active %} Active Member {% else %} Inactive Account {% endif %}
+                </span>
+                <span class="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                    Profile: {{ member.calculate_profile_completion }}%
+                </span>
+            </div>
+        </div>
+
+        <!-- Onboarding Metrics Grid -->
+        <div class="bg-white border border-[#E7E3D6] rounded-3xl p-6 shadow-sm">
+            <h3 class="font-display text-base font-semibold text-[#14231C] mb-4 flex items-center">
+                <i class="fa-solid fa-user-gear mr-2 text-[#9A7A3F]"></i> Complete Body Metrics & Fitness Profile
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
+                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Height & Weight</span>
+                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.height|default:"--" }} cm | {{ member.weight|default:"--" }} kg</span>
+                </div>
+                
+                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
+                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Exercise Experience</span>
+                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.exercise_experience|default:"--" }}</span>
+                </div>
+                
+                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
+                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Training Frequency</span>
+                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.training_frequency|default:"--" }}</span>
+                </div>
+
+                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
+                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Preferred Muscle Split</span>
+                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.preferred_muscle_split|default:"--" }}</span>
+                </div>
+
+                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
+                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Actual Goal</span>
+                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.actual_goal|default:"--" }} ({{ member.target_duration_months|default:"--" }} Months)</span>
+                </div>
+
+                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
+                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Current Body Type</span>
+                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.current_body_type|default:"Not specified" }}</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mt-4">
+                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
+                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Normal Diet Routine</span>
+                    <p class="text-[#14231C] mt-1">{{ member.normal_diet_routine|default:"Not specified" }}</p>
+                </div>
+                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
+                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Daily General Activity</span>
+                    <p class="text-[#14231C] mt-1">{{ member.daily_general_activity|default:"Not specified" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Activity Reports -->
+        <div class="bg-white border border-[#E7E3D6] rounded-3xl p-6 shadow-sm space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                <div>
+                    <h3 class="font-display text-lg font-bold text-[#14231C] flex items-center">
+                        <i class="fa-solid fa-chart-simple mr-2 text-[#1F4D3A]" aria-hidden="true"></i> Daily activity reports
+                    </h3>
+                    <p class="text-xs text-[#6B7568] mt-1">Member-submitted meals, strength sessions, and cardio by date.</p>
+                </div>
+                <div class="flex flex-wrap gap-2 text-[10px] font-semibold">
+                    <span class="rounded-full bg-amber-50 text-amber-800 px-2.5 py-1">{{ meal_logs|length }} meals</span>
+                    <span class="rounded-full bg-emerald-50 text-emerald-800 px-2.5 py-1">{{ workout_logs|length }} strength</span>
+                    <span class="rounded-full bg-sky-50 text-sky-800 px-2.5 py-1">{{ cardio_logs|length }} cardio</span>
+                </div>
+            </div>
+
+            {% for day in daily_activity %}
+                <section class="border-t border-[#E7E3D6] pt-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                        <h4 class="font-display text-sm font-bold text-[#14231C]">{{ day.date|date:"l, F j, Y" }}</h4>
+                        <p class="text-[10px] text-[#6B7568]">{{ day.meals|length }} meal{{ day.meals|length|pluralize }} · {{ day.workouts|length }} strength · {{ day.cardio|length }} cardio</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div class="min-w-0">
+                            <h5 class="text-[10px] font-bold uppercase tracking-wide text-amber-800 flex items-center gap-2 mb-2"><i class="fa-solid fa-utensils" aria-hidden="true"></i> Meals</h5>
+                            {% for meal in day.meals %}
+                                <article class="border-l-2 border-amber-200 pl-3 py-1.5 mb-2">
+                                    <p class="text-xs font-semibold text-[#14231C]">{{ meal.meal_type }} <span class="font-normal text-[#8B8577]">· {{ meal.created_at|date:"H:i" }}</span></p>
+                                    <p class="text-[11px] text-[#6B7568] mt-0.5 whitespace-pre-line break-words">{{ meal.description }}</p>
+                                    {% if meal.receipt_image %}<a class="inline-flex items-center gap-1 mt-1 text-[10px] font-semibold text-[#1F4D3A] hover:underline" href="{{ meal.receipt_image.url }}" target="_blank" rel="noopener"><i class="fa-regular fa-image" aria-hidden="true"></i> View receipt</a>{% endif %}
+                                </article>
+                            {% empty %}<p class="text-[11px] text-[#9B968A]">No meal entries.</p>{% endfor %}
+                        </div>
+
+                        <div class="min-w-0">
+                            <h5 class="text-[10px] font-bold uppercase tracking-wide text-emerald-800 flex items-center gap-2 mb-2"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i> Strength</h5>
+                            {% for workout in day.workouts %}
+                                <article class="border-l-2 border-emerald-200 pl-3 py-1.5 mb-2">
+                                    <p class="text-xs font-semibold text-[#14231C]">{% if workout.did_workout %}{{ workout.muscle_split }}{% else %}Rest day{% endif %} <span class="font-normal text-[#8B8577]">· {{ workout.created_at|date:"H:i" }}</span></p>
+                                    {% if workout.did_workout %}
+                                        <ul class="mt-1 space-y-1 text-[11px] text-[#6B7568]">
+                                            {% for exercise in workout.exercises.all %}<li>{{ exercise.exercise_name }} · {{ exercise.sets }} sets x {{ exercise.rep_range }} reps</li>
+                                            {% empty %}{% if workout.exercise_details %}<li class="whitespace-pre-line">{{ workout.exercise_details }}</li>{% else %}<li>No exercise details recorded.</li>{% endif %}{% endfor %}
+                                        </ul>
+                                    {% endif %}
+                                </article>
+                            {% empty %}<p class="text-[11px] text-[#9B968A]">No strength entries.</p>{% endfor %}
+                        </div>
+
+                        <div class="min-w-0">
+                            <h5 class="text-[10px] font-bold uppercase tracking-wide text-sky-800 flex items-center gap-2 mb-2"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i> Cardio</h5>
+                            {% for session in day.cardio %}
+                                <article class="border-l-2 border-sky-200 pl-3 py-1.5 mb-2">
+                                    <p class="text-xs font-semibold text-[#14231C]">{{ session.activity }} <span class="font-normal text-[#8B8577]">· {{ session.created_at|date:"H:i" }}</span></p>
+                                    <p class="text-[11px] text-[#6B7568] mt-0.5">{{ session.duration_minutes }} min · {{ session.intensity }} intensity</p>
+                                    {% if session.notes %}<p class="text-[11px] text-[#6B7568] mt-0.5 break-words">{{ session.notes }}</p>{% endif %}
+                                </article>
+                            {% empty %}<p class="text-[11px] text-[#9B968A]">No cardio entries.</p>{% endfor %}
+                        </div>
+                    </div>
+                </section>
+            {% empty %}
+                <div class="border-t border-[#E7E3D6] py-10 text-center">
+                    <span class="mx-auto mb-3 flex w-11 h-11 items-center justify-center rounded-2xl bg-[#F4F2EA] text-[#6B7568]"><i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i></span>
+                    <p class="text-sm font-semibold text-[#14231C]">No daily activity submitted</p>
+                    <p class="text-xs text-[#8B8577] mt-1">Member meal, strength, and cardio reports will appear here.</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Payment History Section -->
+        <div class="bg-white border border-[#E7E3D6] rounded-3xl p-6 shadow-sm">
+            <h3 class="font-display text-lg font-bold text-[#14231C] mb-4 flex items-center">
+                <i class="fa-solid fa-receipt mr-2 text-[#A87C3F]"></i> Member Payment History
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-[#F9F8F3] border-b border-[#E7E3D6] text-[#6B7568]">
+                        <tr>
+                            <th class="p-3 font-semibold">Date</th>
+                            <th class="p-3 font-semibold">Amount</th>
+                            <th class="p-3 font-semibold">Bank Name</th>
+                            <th class="p-3 font-semibold">Transaction ID</th>
+                            <th class="p-3 font-semibold">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#EEEBE0]">
+                        {% for p in payments %}
+                        <tr>
+                            <td class="p-3 text-[#4B5750]">{{ p.created_at|date:"Y-m-d H:i" }}</td>
+                            <td class="p-3 font-semibold text-[#14231C]">Rs. {{ p.amount }}</td>
+                            <td class="p-3 text-[#4B5750]">{{ p.bank_name }}</td>
+                            <td class="p-3 text-[#4B5750] font-mono">{{ p.transaction_id }}</td>
+                            <td class="p-3">
+                                <span class="px-2.5 py-1 rounded-full font-semibold {% if p.status == 'Approved' %}bg-green-50 text-green-700{% elif p.status == 'Rejected' %}bg-red-50 text-red-700{% else %}bg-amber-50 text-amber-700{% endif %}">
+                                    {{ p.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="p-6 text-center text-gray-400 italic">No payment records found for this member.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
