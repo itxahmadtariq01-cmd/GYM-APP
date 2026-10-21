@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env', override=False)
+render_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '').strip()
 
 
 def env_bool(name, default=False):
@@ -31,20 +32,21 @@ def env_bool(name, default=False):
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-DEBUG = env_bool('DJANGO_DEBUG', False)
+DEBUG = env_bool('DJANGO_DEBUG', False) and not render_hostname
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '').strip()
 if not SECRET_KEY:
     raise ImproperlyConfigured('DJANGO_SECRET_KEY must be configured in the environment.')
 
-ALLOWED_HOSTS = [
+configured_hosts = [
     host.strip()
-    for host in os.environ.get(
-        'DJANGO_ALLOWED_HOSTS',
-        'localhost,127.0.0.1,[::1]' if DEBUG else '',
-    ).split(',')
+    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
     if host.strip()
 ]
-if not DEBUG and not ALLOWED_HOSTS:
+local_hosts = ['localhost', '127.0.0.1', '[::1]']
+ALLOWED_HOSTS = list(dict.fromkeys(
+    local_hosts + configured_hosts + ([render_hostname] if render_hostname else [])
+))
+if not DEBUG and not configured_hosts and not render_hostname:
     raise ImproperlyConfigured('DJANGO_ALLOWED_HOSTS must be set when DEBUG is disabled.')
 
 CSRF_TRUSTED_ORIGINS = [
@@ -52,6 +54,9 @@ CSRF_TRUSTED_ORIGINS = [
     for origin in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
     if origin.strip()
 ]
+if render_hostname:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{render_hostname}')
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS))
 
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
@@ -66,7 +71,7 @@ SECURE_HSTS_PRELOAD = env_bool('DJANGO_SECURE_HSTS_PRELOAD', False)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 X_FRAME_OPTIONS = 'DENY'
-if env_bool('DJANGO_TRUST_X_FORWARDED_PROTO', False):
+if env_bool('DJANGO_TRUST_X_FORWARDED_PROTO', bool(render_hostname)):
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
@@ -85,6 +90,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -186,8 +192,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # External service credentials must come from the runtime environment.
