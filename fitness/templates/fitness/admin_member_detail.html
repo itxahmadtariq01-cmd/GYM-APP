@@ -3,217 +3,474 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Member Oversight — Caliber Labs</title>
+    <meta name="theme-color" content="#F2F6F9">
+    <meta name="color-scheme" content="light">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="same-origin">
+    <title>{{ member.username }} · Member oversight · Caliber Labs</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CDN: fine for development. Replace with a compiled Tailwind build before production. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        /* ================= Design tokens ================= */
+        :root {
+            --bg: #F2F6F9;
+            --surface: #FFFFFF;
+            --surface-2: #F6F9FB;
+            --line: #E1E8EF;
+            --line-soft: #EAF0F5;
+            --text: #0F1B2D;
+            --text-2: #33445C;
+            --muted: #52627A;
+            --faint: #62738A;           /* 4.8:1 on white */
+            --brand: #0A7F7B;           /* white text 4.9:1 */
+            --brand-dark: #0A6E8E;
+            --brand-text: #0A7571;
+            --coral: #FF6B4A;
+            --green: #047857;
+            --amber: #B45309;
+            --red: #BE123C;
+            --blue: #1D4ED8;
+            --shadow: 0 1px 2px rgba(15,27,45,.04), 0 10px 28px -14px rgba(15,27,45,.16);
+            --ring: 0 0 0 4px rgba(10,127,123,.16);
+        }
+
+        html { scroll-behavior: smooth; }
+        [id] { scroll-margin-top: 1.5rem; }
+
+        body {
+            position: relative;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        /* Fixed glow on its own layer (background-attachment: fixed is janky on iOS) */
+        body::before {
+            content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+            background-image:
+                radial-gradient(900px 500px at 100% -10%, rgba(18,168,161,.10), transparent 60%),
+                radial-gradient(700px 420px at -10% 110%, rgba(255,107,74,.07), transparent 60%);
+        }
+
+        .font-display { font-family: 'Barlow Condensed', 'Manrope', sans-serif; letter-spacing: .01em; }
+        .t-strong { color: var(--text); }
+        .t-muted { color: var(--muted); }
+        .t-faint { color: var(--faint); }
+        .tabular { font-variant-numeric: tabular-nums; }
+        h1, h2, h3 { text-wrap: balance; }
+
+        /* ================= Accessibility helpers ================= */
+        .skip-link {
+            position: absolute; left: 1rem; top: -4rem; z-index: 100;
+            padding: .6rem 1rem; border-radius: 10px; background: var(--text); color: #fff;
+            font-size: 13px; font-weight: 700; transition: top .15s ease;
+        }
+        .skip-link:focus { top: 1rem; }
+        a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+            outline: 3px solid rgba(10,127,123,.5); outline-offset: 3px; border-radius: 6px;
+        }
+
+        /* ================= Surfaces ================= */
+        .surface { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); }
+        .surface-soft { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 14px; }
+        .profile-card { position: relative; overflow: hidden; }
+        .profile-card::before {
+            content: ""; position: absolute; inset: 0 0 auto 0; height: 5px;
+            background: linear-gradient(90deg, var(--brand), var(--brand-dark), var(--coral));
+        }
+        .avatar { background: linear-gradient(135deg, var(--brand), var(--brand-dark)); color: #fff; }
+
+        /* ================= Buttons ================= */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px;
+               border-radius: 12px; font-size: 12.5px; font-weight: 800; transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease; }
+        .btn-primary { color: #fff; background: var(--brand); box-shadow: 0 8px 18px -10px rgba(10,127,123,.8); }
+        .btn-primary:hover { background: var(--brand-dark); }
+        .btn-ghost { color: var(--text-2); background: var(--surface); border: 1px solid var(--line); }
+        .btn-ghost:hover { border-color: var(--brand); color: var(--brand-text); background: rgba(10,127,123,.05); }
+
+        /* ================= Pills + tiles ================= */
+        .pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+        .pill-green { color: var(--green); background: #D7F5E8; border: 1px solid #A7E8CC; }
+        .pill-amber { color: var(--amber); background: #FEF0D2; border: 1px solid #F8D58E; }
+        .pill-red   { color: var(--red);   background: #FFE1E7; border: 1px solid #FBB5C2; }
+        .pill-brand { color: var(--brand-text); background: #D6F3F1; border: 1px solid #9EDFDA; }
+        .pill-slate { color: var(--text-2); background: #EEF2F6; border: 1px solid var(--line); }
+
+        .icon-tile { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; font-size: 14px; }
+        .tile-brand { background: #D6F3F1; color: var(--brand-text); }
+        .tile-green { background: #D7F5E8; color: var(--green); }
+        .tile-blue  { background: #DEE9FF; color: var(--blue); }
+        .tile-amber { background: #FEF0D2; color: var(--amber); }
+
+        .i-brand { color: var(--brand); } .i-amber { color: var(--amber); } .i-green { color: var(--green); }
+        .i-red { color: var(--red); }     .i-blue { color: var(--blue); }
+
+        .back-link { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 12px; font-size: 12px; font-weight: 800;
+                     color: var(--brand-text); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+                     transition: border-color .2s ease; }
+        .back-link:hover { border-color: var(--brand); }
+
+        /* ================= Progress ================= */
+        .bar-track { height: 8px; border-radius: 999px; background: #E6EDF3; overflow: hidden; }
+        .bar-fill { height: 100%; max-width: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--brand), var(--brand-dark));
+                    transform-origin: left center; animation: grow .9s cubic-bezier(.2,.8,.2,1) backwards; }
+        @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+        /* ================= Daily activity ================= */
+        .day { border-top: 1px solid var(--line); }
+        .day:first-of-type { border-top: 0; }
+        .day-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
+                       padding: 16px 0; cursor: pointer; list-style: none; }
+        .day-summary::-webkit-details-marker { display: none; }
+        .day-chevron { transition: transform .2s ease; color: var(--faint); }
+        .day[open] .day-chevron { transform: rotate(180deg); }
+        .log-col { border-left: 3px solid; padding: 6px 0 6px 12px; margin-bottom: 10px; border-radius: 0 10px 10px 0; }
+        .log-amber { border-color: #F3C56B; } .log-green { border-color: #6FD6AE; } .log-blue { border-color: #8DB8FF; }
+
+        /* ================= Table ================= */
+        .data-table { width: 100%; min-width: 34rem; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+        .data-table th { padding: 14px; text-align: left; background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 800; border-bottom: 1px solid var(--line); }
+        .data-table td { padding: 14px; border-bottom: 1px solid var(--line-soft); }
+        .data-table tbody tr:last-child td { border-bottom: 0; }
+        .data-table tbody tr:hover td { background: rgba(10,127,123,.04); }
+        .data-table .num { text-align: right; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #C5D2DD; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--brand); }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+        }
+        @media print {
+            body { padding: 0 !important; background: #fff; }
+            body::before, aside, nav, .no-print { display: none !important; }
+            .surface { box-shadow: none; break-inside: avoid; }
+        }
     </style>
 </head>
-<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] p-10 pb-24 md:pl-64 md:pb-10">
+
+<body class="p-4 pb-24 antialiased selection:bg-[#0A7F7B] selection:text-white sm:p-6 md:p-10 md:pb-10 md:pl-64">
+    <a href="#main" class="skip-link">Skip to main content</a>
+
     {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
 
-    <div class="max-w-5xl mx-auto space-y-6">
-        <!-- Top Navigation / Back -->
-        <div class="flex justify-between items-center">
-            <a href="{% url 'dashboard' %}" class="inline-flex items-center text-xs font-semibold text-[#1F4D3A] bg-white px-4 py-2 rounded-xl border border-[#E7E3D6] shadow-sm hover:bg-[#F9F8F3]">
-                <i class="fa-solid fa-arrow-left mr-2"></i> Back to Command Center
+    <main id="main" class="mx-auto max-w-5xl space-y-6">
+
+        {# ---------- Top bar ---------- #}
+        <div class="no-print flex flex-wrap items-center justify-between gap-3">
+            <a href="{% url 'dashboard' %}" class="back-link">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to home
             </a>
-            <div class="flex items-center gap-2">
-                <a href="{% url 'member_daily_report' member.pk %}" class="inline-flex items-center gap-2 text-xs font-semibold text-white bg-[#1F4D3A] px-4 py-2 rounded-xl shadow-sm hover:bg-[#173c2d]">
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="{% url 'member_daily_report' member.pk %}" class="btn btn-primary">
                     <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Full daily report
                 </a>
-                <span class="text-xs bg-white px-4 py-2 rounded-xl border border-[#E7E3D6] font-semibold text-[#9A7A3F]">
-                    {{ role }} Oversight Panel
+                <button type="button" onclick="window.print()" class="btn btn-ghost">
+                    <i class="fa-solid fa-print" aria-hidden="true"></i> Print
+                </button>
+                <span class="pill pill-slate">
+                    <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Viewing as {{ role|default:"staff" }}
                 </span>
             </div>
         </div>
 
-        <!-- Member Header Card -->
-        <div class="bg-white border border-[#E7E3D6] rounded-3xl p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 rounded-2xl bg-[#1F4D3A] flex items-center justify-center font-display font-700 text-white text-lg">
-                        {{ member.username|slice:":1"|upper }}
+        {# ---------- Member header ---------- #}
+        {% with completion=member.calculate_profile_completion|default:0|stringformat:"d" %}
+        <header class="surface profile-card flex flex-col items-start justify-between gap-6 p-6 sm:p-8 md:flex-row md:items-center">
+            <div class="flex min-w-0 items-center gap-4">
+                <div class="avatar flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl font-display text-2xl font-bold" aria-hidden="true">
+                    {{ member.username|slice:":1"|upper }}
+                </div>
+                <div class="min-w-0">
+                    <h1 class="break-words font-display text-3xl font-semibold leading-none t-strong">{{ member.get_full_name|default:member.username }}</h1>
+                    <p class="mt-2 break-words text-sm t-muted">
+                        @{{ member.username }}
+                        {% if member.email %}&nbsp;&middot;&nbsp;<a href="mailto:{{ member.email }}" class="underline decoration-[#C5D2DD] underline-offset-2 hover:text-[#0A7571]">{{ member.email }}</a>{% endif %}
+                    </p>
+                    <p class="mt-1 text-xs t-faint">
+                        Joined <time datetime="{{ member.date_joined|date:'Y-m-d' }}">{{ member.date_joined|date:"M j, Y" }}</time>
+                    </p>
+                </div>
+            </div>
+
+            <div class="w-full md:w-64">
+                <span class="pill {% if member.is_active %}pill-green{% else %}pill-red{% endif %}">
+                    <i class="fa-solid {% if member.is_active %}fa-circle-check{% else %}fa-circle-xmark{% endif %}" aria-hidden="true"></i>
+                    {% if member.is_active %}Active member{% else %}Inactive account{% endif %}
+                </span>
+                <div class="mt-4">
+                    <div class="mb-1.5 flex items-center justify-between text-xs">
+                        <span class="font-semibold t-muted">Profile completion</span>
+                        <strong class="tabular t-strong">{{ completion }}%</strong>
                     </div>
-                    <div>
-                        <h1 class="font-display text-xl font-semibold text-[#14231C]">{{ member.username }}</h1>
-                        <p class="mt-1 text-sm text-[#6B7568]">Email: {{ member.email|default:"Not provided" }} | Joined: {{ member.date_joined|date:"Y-m-d" }}</p>
+                    <div class="bar-track" role="progressbar" aria-label="Profile completion"
+                         aria-valuenow="{{ completion }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="bar-fill" style="width:{{ completion }}%"></div>
                     </div>
                 </div>
             </div>
-            <div class="flex items-center space-x-3">
-                <span class="px-3 py-1.5 rounded-full text-xs font-semibold {% if member.is_active %}bg-green-50 text-green-700 border border-green-200{% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
-                    {% if member.is_active %} Active Member {% else %} Inactive Account {% endif %}
-                </span>
-                <span class="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                    Profile: {{ member.calculate_profile_completion }}%
-                </span>
-            </div>
-        </div>
+        </header>
+        {% endwith %}
 
-        <!-- Onboarding Metrics Grid -->
-        <div class="bg-white border border-[#E7E3D6] rounded-3xl p-6 shadow-sm">
-            <h3 class="font-display text-base font-semibold text-[#14231C] mb-4 flex items-center">
-                <i class="fa-solid fa-user-gear mr-2 text-[#9A7A3F]"></i> Complete Body Metrics & Fitness Profile
-            </h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
-                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Height & Weight</span>
-                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.height|default:"--" }} cm | {{ member.weight|default:"--" }} kg</span>
+        {# ---------- At a glance ---------- #}
+        <section aria-label="Activity totals">
+            <dl class="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div class="surface p-4">
+                    <dt class="flex items-center gap-2 text-xs font-semibold t-muted"><i class="fa-solid fa-utensils i-amber" aria-hidden="true"></i>Meals logged</dt>
+                    <dd class="mt-1 font-display text-3xl font-semibold leading-none tabular t-strong">{{ meal_logs|length }}</dd>
                 </div>
-                
-                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
-                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Exercise Experience</span>
-                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.exercise_experience|default:"--" }}</span>
+                <div class="surface p-4">
+                    <dt class="flex items-center gap-2 text-xs font-semibold t-muted"><i class="fa-solid fa-dumbbell i-green" aria-hidden="true"></i>Strength sessions</dt>
+                    <dd class="mt-1 font-display text-3xl font-semibold leading-none tabular t-strong">{{ workout_logs|length }}</dd>
                 </div>
-                
-                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
-                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Training Frequency</span>
-                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.training_frequency|default:"--" }}</span>
+                <div class="surface p-4">
+                    <dt class="flex items-center gap-2 text-xs font-semibold t-muted"><i class="fa-solid fa-heart-pulse i-blue" aria-hidden="true"></i>Cardio sessions</dt>
+                    <dd class="mt-1 font-display text-3xl font-semibold leading-none tabular t-strong">{{ cardio_logs|length }}</dd>
                 </div>
+                <div class="surface p-4">
+                    <dt class="flex items-center gap-2 text-xs font-semibold t-muted"><i class="fa-solid fa-receipt i-brand" aria-hidden="true"></i>Payments</dt>
+                    <dd class="mt-1 font-display text-3xl font-semibold leading-none tabular t-strong">{{ payments|length }}</dd>
+                </div>
+            </dl>
+        </section>
 
-                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
-                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Preferred Muscle Split</span>
-                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.preferred_muscle_split|default:"--" }}</span>
-                </div>
+        {% include 'fitness/partials/quick_navigation_cards.html' %}
 
-                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
-                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Actual Goal</span>
-                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.actual_goal|default:"--" }} ({{ member.target_duration_months|default:"--" }} Months)</span>
-                </div>
+        {# ---------- Body metrics & fitness profile ---------- #}
+        <section aria-labelledby="member-profile-title" class="surface p-5 sm:p-6">
+            <h2 id="member-profile-title" class="mb-5 flex items-center gap-3 font-display text-2xl font-semibold t-strong">
+                <span class="icon-tile tile-brand"><i class="fa-solid fa-user-gear" aria-hidden="true"></i></span>
+                Body metrics and fitness profile
+            </h2>
 
-                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
-                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Current Body Type</span>
-                    <span class="font-semibold text-[#14231C] text-sm mt-1 block">{{ member.current_body_type|default:"Not specified" }}</span>
+            <dl class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div class="surface-soft p-4">
+                    <dt class="text-xs font-semibold t-muted"><i class="fa-solid fa-ruler-vertical i-brand mr-1.5" aria-hidden="true"></i>Height and weight</dt>
+                    <dd class="mt-1.5 font-display text-2xl font-semibold tabular t-strong">
+                        {{ member.height|default_if_none:"--" }} <span class="font-sans text-xs t-muted">cm</span>
+                        <span class="t-faint" aria-hidden="true">/</span>
+                        {{ member.weight|default_if_none:"--" }} <span class="font-sans text-xs t-muted">kg</span>
+                    </dd>
                 </div>
-            </div>
+                <div class="surface-soft p-4">
+                    <dt class="text-xs font-semibold t-muted"><i class="fa-solid fa-dumbbell i-amber mr-1.5" aria-hidden="true"></i>Exercise experience</dt>
+                    <dd class="mt-2 text-sm font-bold t-strong">{{ member.exercise_experience|default:"--" }}</dd>
+                </div>
+                <div class="surface-soft p-4">
+                    <dt class="text-xs font-semibold t-muted"><i class="fa-solid fa-calendar-week i-green mr-1.5" aria-hidden="true"></i>Training frequency</dt>
+                    <dd class="mt-2 text-sm font-bold t-strong">{{ member.training_frequency|default:"--" }}</dd>
+                </div>
+                <div class="surface-soft p-4">
+                    <dt class="text-xs font-semibold t-muted"><i class="fa-solid fa-person-rays i-brand mr-1.5" aria-hidden="true"></i>Preferred muscle split</dt>
+                    <dd class="mt-2 text-sm font-bold t-strong">{{ member.preferred_muscle_split|default:"--" }}</dd>
+                </div>
+                <div class="surface-soft p-4">
+                    <dt class="text-xs font-semibold t-muted"><i class="fa-solid fa-bullseye i-red mr-1.5" aria-hidden="true"></i>Goal</dt>
+                    <dd class="mt-2 text-sm font-bold t-strong">
+                        {{ member.actual_goal|default:"--" }}
+                        {% if member.target_duration_months %}<span class="font-semibold t-muted">({{ member.target_duration_months }} month{{ member.target_duration_months|pluralize }})</span>{% endif %}
+                    </dd>
+                </div>
+                <div class="surface-soft p-4">
+                    <dt class="text-xs font-semibold t-muted"><i class="fa-solid fa-person i-blue mr-1.5" aria-hidden="true"></i>Current body type</dt>
+                    <dd class="mt-2 text-sm font-bold t-strong">{{ member.current_body_type|default:"Not specified" }}</dd>
+                </div>
+            </dl>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mt-4">
-                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
-                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Normal Diet Routine</span>
-                    <p class="text-[#14231C] mt-1">{{ member.normal_diet_routine|default:"Not specified" }}</p>
+            <dl class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div class="surface-soft p-4">
+                    <dt class="text-xs font-semibold t-muted"><i class="fa-solid fa-utensils i-amber mr-1.5" aria-hidden="true"></i>Normal diet routine</dt>
+                    <dd class="mt-2 text-sm leading-relaxed t-strong">{{ member.normal_diet_routine|default:"Not specified" }}</dd>
                 </div>
-                <div class="p-3 bg-[#F9F8F3] rounded-2xl border border-[#E7E3D6]">
-                    <span class="block text-[10px] font-bold text-[#6B7568] uppercase tracking-widest">Daily General Activity</span>
-                    <p class="text-[#14231C] mt-1">{{ member.daily_general_activity|default:"Not specified" }}</p>
+                <div class="surface-soft p-4">
+                    <dt class="text-xs font-semibold t-muted"><i class="fa-solid fa-person-walking i-green mr-1.5" aria-hidden="true"></i>Daily general activity</dt>
+                    <dd class="mt-2 text-sm leading-relaxed t-strong">{{ member.daily_general_activity|default:"Not specified" }}</dd>
                 </div>
-            </div>
-        </div>
+            </dl>
+        </section>
 
-        <!-- Daily Activity Reports -->
-        <div class="bg-white border border-[#E7E3D6] rounded-3xl p-6 shadow-sm space-y-5">
-            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        {# ---------- Weight progress ---------- #}
+        <section aria-labelledby="member-weight-title" class="surface p-5 sm:p-6">
+            <div class="flex items-start gap-3">
+                <span class="icon-tile tile-blue"><i class="fa-solid fa-weight-scale" aria-hidden="true"></i></span>
                 <div>
-                    <h3 class="font-display text-lg font-bold text-[#14231C] flex items-center">
-                        <i class="fa-solid fa-chart-simple mr-2 text-[#1F4D3A]" aria-hidden="true"></i> Daily activity reports
-                    </h3>
-                    <p class="text-xs text-[#6B7568] mt-1">Member-submitted meals, strength sessions, and cardio by date.</p>
-                </div>
-                <div class="flex flex-wrap gap-2 text-[10px] font-semibold">
-                    <span class="rounded-full bg-amber-50 text-amber-800 px-2.5 py-1">{{ meal_logs|length }} meals</span>
-                    <span class="rounded-full bg-emerald-50 text-emerald-800 px-2.5 py-1">{{ workout_logs|length }} strength</span>
-                    <span class="rounded-full bg-sky-50 text-sky-800 px-2.5 py-1">{{ cardio_logs|length }} cardio</span>
+                    <h2 id="member-weight-title" class="font-display text-2xl font-semibold leading-none t-strong">Weight progress</h2>
+                    <p class="mt-1.5 text-xs t-muted">Historical member weigh-ins. Visible only to authorized staff for this member.</p>
                 </div>
             </div>
+            {% include "fitness/partials/weight_progress_chart.html" with chart_id="staff-member-weight-progress" %}
+        </section>
 
-            {% for day in daily_activity %}
-                <section class="border-t border-[#E7E3D6] pt-5">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                        <h4 class="font-display text-sm font-bold text-[#14231C]">{{ day.date|date:"l, F j, Y" }}</h4>
-                        <p class="text-[10px] text-[#6B7568]">{{ day.meals|length }} meal{{ day.meals|length|pluralize }} · {{ day.workouts|length }} strength · {{ day.cardio|length }} cardio</p>
+        {# ---------- Daily activity ---------- #}
+        <section id="member-daily-activity" aria-labelledby="member-activity-title" class="surface p-5 sm:p-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div class="flex items-start gap-3">
+                    <span class="icon-tile tile-green"><i class="fa-solid fa-chart-simple" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="member-activity-title" class="font-display text-2xl font-semibold leading-none t-strong">Daily activity reports</h2>
+                        <p class="mt-1.5 text-xs t-muted">Member-submitted meals, strength sessions and cardio by date. The newest day is open.</p>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        <div class="min-w-0">
-                            <h5 class="text-[10px] font-bold uppercase tracking-wide text-amber-800 flex items-center gap-2 mb-2"><i class="fa-solid fa-utensils" aria-hidden="true"></i> Meals</h5>
-                            {% for meal in day.meals %}
-                                <article class="border-l-2 border-amber-200 pl-3 py-1.5 mb-2">
-                                    <p class="text-xs font-semibold text-[#14231C]">{{ meal.meal_type }} <span class="font-normal text-[#8B8577]">· {{ meal.created_at|date:"H:i" }}</span></p>
-                                    <p class="text-[11px] text-[#6B7568] mt-0.5 whitespace-pre-line break-words">{{ meal.description }}</p>
-                                    {% if meal.receipt_image %}<a class="inline-flex items-center gap-1 mt-1 text-[10px] font-semibold text-[#1F4D3A] hover:underline" href="{{ meal.receipt_image.url }}" target="_blank" rel="noopener"><i class="fa-regular fa-image" aria-hidden="true"></i> View receipt</a>{% endif %}
-                                </article>
-                            {% empty %}<p class="text-[11px] text-[#9B968A]">No meal entries.</p>{% endfor %}
-                        </div>
-
-                        <div class="min-w-0">
-                            <h5 class="text-[10px] font-bold uppercase tracking-wide text-emerald-800 flex items-center gap-2 mb-2"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i> Strength</h5>
-                            {% for workout in day.workouts %}
-                                <article class="border-l-2 border-emerald-200 pl-3 py-1.5 mb-2">
-                                    <p class="text-xs font-semibold text-[#14231C]">{% if workout.did_workout %}{{ workout.muscle_split }}{% else %}Rest day{% endif %} <span class="font-normal text-[#8B8577]">· {{ workout.created_at|date:"H:i" }}</span></p>
-                                    {% if workout.did_workout %}
-                                        <ul class="mt-1 space-y-1 text-[11px] text-[#6B7568]">
-                                            {% for exercise in workout.exercises.all %}<li>{{ exercise.exercise_name }} · {{ exercise.sets }} sets x {{ exercise.rep_range }} reps</li>
-                                            {% empty %}{% if workout.exercise_details %}<li class="whitespace-pre-line">{{ workout.exercise_details }}</li>{% else %}<li>No exercise details recorded.</li>{% endif %}{% endfor %}
-                                        </ul>
-                                    {% endif %}
-                                </article>
-                            {% empty %}<p class="text-[11px] text-[#9B968A]">No strength entries.</p>{% endfor %}
-                        </div>
-
-                        <div class="min-w-0">
-                            <h5 class="text-[10px] font-bold uppercase tracking-wide text-sky-800 flex items-center gap-2 mb-2"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i> Cardio</h5>
-                            {% for session in day.cardio %}
-                                <article class="border-l-2 border-sky-200 pl-3 py-1.5 mb-2">
-                                    <p class="text-xs font-semibold text-[#14231C]">{{ session.activity }} <span class="font-normal text-[#8B8577]">· {{ session.created_at|date:"H:i" }}</span></p>
-                                    <p class="text-[11px] text-[#6B7568] mt-0.5">{{ session.duration_minutes }} min · {{ session.intensity }} intensity</p>
-                                    {% if session.notes %}<p class="text-[11px] text-[#6B7568] mt-0.5 break-words">{{ session.notes }}</p>{% endif %}
-                                </article>
-                            {% empty %}<p class="text-[11px] text-[#9B968A]">No cardio entries.</p>{% endfor %}
-                        </div>
-                    </div>
-                </section>
-            {% empty %}
-                <div class="border-t border-[#E7E3D6] py-10 text-center">
-                    <span class="mx-auto mb-3 flex w-11 h-11 items-center justify-center rounded-2xl bg-[#F4F2EA] text-[#6B7568]"><i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i></span>
-                    <p class="text-sm font-semibold text-[#14231C]">No daily activity submitted</p>
-                    <p class="text-xs text-[#8B8577] mt-1">Member meal, strength, and cardio reports will appear here.</p>
                 </div>
-            {% endfor %}
-        </div>
+                {% if daily_activity %}
+                <button type="button" data-toggle-days aria-pressed="false" class="btn btn-ghost no-print">
+                    <i class="fa-solid fa-angles-down" aria-hidden="true"></i><span>Expand all days</span>
+                </button>
+                {% endif %}
+            </div>
 
-        <!-- Payment History Section -->
-        <div class="bg-white border border-[#E7E3D6] rounded-3xl p-6 shadow-sm">
-            <h3 class="font-display text-lg font-bold text-[#14231C] mb-4 flex items-center">
-                <i class="fa-solid fa-receipt mr-2 text-[#A87C3F]"></i> Member Payment History
-            </h3>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                    <thead class="bg-[#F9F8F3] border-b border-[#E7E3D6] text-[#6B7568]">
+            <div class="mt-4">
+                {% for day in daily_activity %}
+                {% with m=day.meals|length w=day.workouts|length c=day.cardio|length %}
+                <details class="day" {% if forloop.first %}open{% endif %}>
+                    <summary class="day-summary">
+                        <h3 class="font-display text-xl font-semibold t-strong">
+                            <time datetime="{{ day.date|date:'Y-m-d' }}">{{ day.date|date:"l, F j, Y" }}</time>
+                        </h3>
+                        <span class="flex items-center gap-3 text-xs t-muted">
+                            <span>{{ m }} meal{{ m|pluralize }}, {{ w }} strength, {{ c }} cardio</span>
+                            <i class="fa-solid fa-chevron-down day-chevron" aria-hidden="true"></i>
+                        </span>
+                    </summary>
+
+                    <div class="grid grid-cols-1 gap-5 pb-6 md:grid-cols-3">
+                        <div class="min-w-0">
+                            <h4 class="mb-3 flex items-center gap-2 text-xs font-extrabold i-amber"><i class="fa-solid fa-utensils" aria-hidden="true"></i> Meals</h4>
+                            {% for meal in day.meals %}
+                            <article class="log-col log-amber">
+                                <p class="text-[13px] font-bold t-strong">{{ meal.meal_type }} <span class="font-medium t-faint">at {{ meal.created_at|date:"H:i" }}</span></p>
+                                <p class="mt-0.5 whitespace-pre-line break-words text-xs t-muted">{{ meal.description }}</p>
+                                {% if meal.receipt_image %}
+                                <a class="mt-1 inline-flex items-center gap-1 text-[11px] font-bold hover:underline" style="color:var(--brand-text)"
+                                   href="{{ meal.receipt_image.url }}" target="_blank" rel="noopener noreferrer">
+                                    <i class="fa-regular fa-image" aria-hidden="true"></i> View receipt<span class="sr-only"> for {{ meal.meal_type }} (opens in a new tab)</span>
+                                </a>
+                                {% endif %}
+                            </article>
+                            {% empty %}<p class="text-xs t-faint">No meal entries.</p>{% endfor %}
+                        </div>
+
+                        <div class="min-w-0">
+                            <h4 class="mb-3 flex items-center gap-2 text-xs font-extrabold i-green"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i> Strength</h4>
+                            {% for workout in day.workouts %}
+                            <article class="log-col log-green">
+                                <p class="text-[13px] font-bold t-strong">{% if workout.did_workout %}{{ workout.muscle_split }}{% else %}Rest day{% endif %} <span class="font-medium t-faint">at {{ workout.created_at|date:"H:i" }}</span></p>
+                                {% if workout.did_workout %}
+                                <ul class="mt-1 space-y-1 text-xs t-muted">
+                                    {% for exercise in workout.exercises.all %}
+                                    <li>{{ exercise.exercise_name }}: {{ exercise.sets }} sets &times; {{ exercise.rep_range }} reps</li>
+                                    {% empty %}
+                                    {% if workout.exercise_details %}<li class="whitespace-pre-line">{{ workout.exercise_details }}</li>{% else %}<li>No exercise details recorded.</li>{% endif %}
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                                {% if workout.notes %}<p class="mt-1 whitespace-pre-line break-words text-xs t-muted"><strong>Notes:</strong> {{ workout.notes }}</p>{% endif %}
+                            </article>
+                            {% empty %}<p class="text-xs t-faint">No strength entries.</p>{% endfor %}
+                        </div>
+
+                        <div class="min-w-0">
+                            <h4 class="mb-3 flex items-center gap-2 text-xs font-extrabold i-blue"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i> Cardio</h4>
+                            {% for session in day.cardio %}
+                            <article class="log-col log-blue">
+                                <p class="text-[13px] font-bold t-strong">{{ session.activity }} <span class="font-medium t-faint">at {{ session.created_at|date:"H:i" }}</span></p>
+                                <p class="mt-0.5 text-xs t-muted">{{ session.duration_minutes }} min, {{ session.intensity }} intensity</p>
+                                {% if session.notes %}<p class="mt-0.5 whitespace-pre-line break-words text-xs t-muted">{{ session.notes }}</p>{% endif %}
+                            </article>
+                            {% empty %}<p class="text-xs t-faint">No cardio entries.</p>{% endfor %}
+                        </div>
+                    </div>
+                </details>
+                {% endwith %}
+                {% empty %}
+                <div class="border-t border-[#E1E8EF] py-10 text-center">
+                    <span class="icon-tile tile-brand mx-auto mb-3"><i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i></span>
+                    <p class="text-sm font-bold t-strong">No daily activity submitted</p>
+                    <p class="mt-1 text-xs t-muted">Meal, strength and cardio reports will appear here once the member logs them.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        {# ---------- Payment history ---------- #}
+        <section id="member-payments" aria-labelledby="member-payments-title" class="surface p-5 sm:p-6">
+            <h2 id="member-payments-title" class="mb-5 flex items-center gap-3 font-display text-2xl font-semibold t-strong">
+                <span class="icon-tile tile-amber"><i class="fa-solid fa-receipt" aria-hidden="true"></i></span>
+                Member payment history
+            </h2>
+            <div class="overflow-x-auto rounded-xl border border-[#E1E8EF]" tabindex="0" role="region" aria-labelledby="member-payments-title">
+                <table class="data-table">
+                    <caption class="sr-only">Payment history for this member</caption>
+                    <thead>
                         <tr>
-                            <th class="p-3 font-semibold">Date</th>
-                            <th class="p-3 font-semibold">Amount</th>
-                            <th class="p-3 font-semibold">Bank Name</th>
-                            <th class="p-3 font-semibold">Transaction ID</th>
-                            <th class="p-3 font-semibold">Status</th>
+                            <th scope="col">Date</th>
+                            <th scope="col" class="num">Amount</th>
+                            <th scope="col">Bank</th>
+                            <th scope="col">Transaction ID</th>
+                            <th scope="col">Status</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-[#EEEBE0]">
+                    <tbody>
                         {% for p in payments %}
                         <tr>
-                            <td class="p-3 text-[#4B5750]">{{ p.created_at|date:"Y-m-d H:i" }}</td>
-                            <td class="p-3 font-semibold text-[#14231C]">Rs. {{ p.amount }}</td>
-                            <td class="p-3 text-[#4B5750]">{{ p.bank_name }}</td>
-                            <td class="p-3 text-[#4B5750] font-mono">{{ p.transaction_id }}</td>
-                            <td class="p-3">
-                                <span class="px-2.5 py-1 rounded-full font-semibold {% if p.status == 'Approved' %}bg-green-50 text-green-700{% elif p.status == 'Rejected' %}bg-red-50 text-red-700{% else %}bg-amber-50 text-amber-700{% endif %}">
+                            <td class="tabular t-muted">{{ p.created_at|date:"Y-m-d H:i" }}</td>
+                            <td class="num tabular font-bold t-strong">Rs. {{ p.amount }}</td>
+                            <td class="t-muted">{{ p.bank_name }}</td>
+                            <td class="font-mono text-xs t-muted">{{ p.transaction_id }}</td>
+                            <td>
+                                <span class="pill {% if p.status == 'Approved' %}pill-green{% elif p.status == 'Rejected' %}pill-red{% else %}pill-amber{% endif %}">
+                                    <i class="fa-solid {% if p.status == 'Approved' %}fa-circle-check{% elif p.status == 'Rejected' %}fa-circle-xmark{% else %}fa-clock{% endif %}" aria-hidden="true"></i>
                                     {{ p.status }}
                                 </span>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="p-6 text-center text-gray-400 italic">No payment records found for this member.</td>
+                            <td colspan="5" class="py-8 text-center t-muted">No payment records found for this member.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
 
-    </div>
+        <p class="no-print pb-2 text-center text-xs t-faint">
+            <a href="#main" class="font-bold underline underline-offset-2 hover:text-[#0A7571]">Back to top</a>
+        </p>
+    </main>
 
+    <script>
+        (function () {
+            var days = document.querySelectorAll('details.day');
+            var toggle = document.querySelector('[data-toggle-days]');
+
+            if (toggle && days.length) {
+                var label = toggle.querySelector('span');
+                var icon = toggle.querySelector('i');
+                toggle.addEventListener('click', function () {
+                    var expand = toggle.getAttribute('aria-pressed') !== 'true';
+                    days.forEach(function (day) { day.open = expand; });
+                    toggle.setAttribute('aria-pressed', String(expand));
+                    label.textContent = expand ? 'Collapse all days' : 'Expand all days';
+                    icon.className = 'fa-solid ' + (expand ? 'fa-angles-up' : 'fa-angles-down');
+                });
+            }
+
+            /* Make sure every day is visible when printing */
+            window.addEventListener('beforeprint', function () {
+                days.forEach(function (day) { day.open = true; });
+            });
+        })();
+    </script>
 </body>
 </html>

@@ -1,11 +1,13 @@
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
+from decimal import Decimal
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 
 class Permission(models.Model):
@@ -162,6 +164,74 @@ class WorkoutPlan(models.Model):
     def __str__(self):
         return f'{self.title} - {self.member.username}'
 
+
+class WorkoutSplit(models.Model):
+    member = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='workout_split',
+    )
+    title = models.CharField(max_length=100, default='My weekly split')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.title} - {self.member.username}'
+
+
+class WorkoutSplitDay(models.Model):
+    WEEKDAY_CHOICES = [
+        (0, 'Monday'),
+        (1, 'Tuesday'),
+        (2, 'Wednesday'),
+        (3, 'Thursday'),
+        (4, 'Friday'),
+        (5, 'Saturday'),
+        (6, 'Sunday'),
+    ]
+    MUSCLE_GROUP_CHOICES = [
+        ('Chest', 'Chest'),
+        ('Back', 'Back'),
+        ('Shoulders', 'Shoulders'),
+        ('Biceps', 'Biceps'),
+        ('Triceps', 'Triceps'),
+        ('Legs', 'Legs'),
+        ('Core', 'Core'),
+    ]
+
+    split = models.ForeignKey(
+        WorkoutSplit,
+        on_delete=models.CASCADE,
+        related_name='days',
+    )
+    weekday = models.PositiveSmallIntegerField(choices=WEEKDAY_CHOICES)
+    muscle_groups = models.JSONField(default=list)
+
+    class Meta:
+        ordering = ('weekday',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=('split', 'weekday'),
+                name='unique_workout_split_day',
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if not isinstance(self.muscle_groups, list):
+            raise ValidationError({'muscle_groups': 'Choose one or more valid muscle groups.'})
+        valid_groups = {value for value, _ in self.MUSCLE_GROUP_CHOICES}
+        if (
+            not self.muscle_groups
+            or any(not isinstance(group, str) for group in self.muscle_groups)
+            or len(self.muscle_groups) != len(set(self.muscle_groups))
+            or not set(self.muscle_groups).issubset(valid_groups)
+        ):
+            raise ValidationError({'muscle_groups': 'Choose one or more valid muscle groups.'})
+
+    def __str__(self):
+        return f'{self.get_weekday_display()} - {", ".join(self.muscle_groups)}'
+
+
 class DietPlan(models.Model):
     title = models.CharField(max_length=100)
     meal_details = models.TextField()
@@ -194,11 +264,106 @@ class MealLog(models.Model):
     date = models.DateField(default=timezone.localdate, db_index=True)
     meal_type = models.CharField(max_length=50, choices=MEAL_TYPE_CHOICES)
     description = models.TextField()
+    calories = models.DecimalField(max_digits=8, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    protein = models.DecimalField(max_digits=8, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    carbs = models.DecimalField(max_digits=8, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    fats = models.DecimalField(max_digits=8, decimal_places=2, default=0, validators=[MinValueValidator(0)])
     receipt_image = models.ImageField(upload_to='meal_logs/', blank=True, null=True) # Meal photo
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.member.username} - {self.meal_type} ({self.date})"
+
+
+class WeightLog(models.Model):
+    member = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='weight_logs')
+    date = models.DateField(default=timezone.localdate, db_index=True)
+    weight_kg = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        validators=[MinValueValidator(0.01)],
+    )
+    notes = models.TextField(blank=True, max_length=2000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-date', '-created_at')
+        constraints = [
+            models.UniqueConstraint(fields=('member', 'date'), name='unique_member_weight_log_per_day'),
+        ]
+
+    def __str__(self):
+            return f"{self.member.username} - {self.weight_kg} kg ({self.date})"
+
+
+class WaterLog(models.Model):
+    member = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='water_logs')
+    date = models.DateField(default=timezone.localdate, db_index=True)
+    liters = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01')), MaxValueValidator(Decimal('99.99'))],
+    )
+    notes = models.TextField(blank=True, max_length=2000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-date', '-created_at')
+        constraints = [
+            models.UniqueConstraint(fields=('member', 'date'), name='unique_member_water_log_per_day'),
+        ]
+
+    def __str__(self):
+        return f"{self.member.username} - {self.liters} L ({self.date})"
+
+
+class WeightGoal(models.Model):
+    member = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='weight_goal',
+    )
+    starting_weight_kg = models.DecimalField(max_digits=6, decimal_places=2)
+    target_weight_kg = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        validators=[MinValueValidator(0.01)],
+    )
+    start_date = models.DateField()
+    target_date = models.DateField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        errors = {}
+        if (
+            self.starting_weight_kg is not None
+            and self.target_weight_kg is not None
+            and self.starting_weight_kg == self.target_weight_kg
+        ):
+            errors['target_weight_kg'] = 'Choose a target weight different from your starting weight.'
+        if (
+            self.start_date is not None
+            and self.target_date is not None
+            and self.target_date <= self.start_date
+        ):
+            errors['target_date'] = 'Choose a target date after your goal start date.'
+        if errors:
+            raise ValidationError(errors)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(starting_weight_kg=models.F('target_weight_kg')),
+                name='weight_goal_target_differs',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(target_date__gt=models.F('start_date')),
+                name='weight_goal_target_date_after_start',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.member.username} - {self.target_weight_kg} kg by {self.target_date}"
 
 
 class WorkoutLog(models.Model):
@@ -219,6 +384,7 @@ class WorkoutLog(models.Model):
     did_workout = models.BooleanField(default=True)
     muscle_split = models.CharField(max_length=100, choices=MUSCLE_SPLIT_CHOICES, blank=True, null=True)
     exercise_details = models.TextField(blank=True, null=True)             # Sets, reps, weights notes or JSON structure
+    notes = models.TextField(blank=True, max_length=2000)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -245,7 +411,12 @@ class WorkoutExerciseLog(models.Model):
         ('Leg Curl', 'Leg Curl'),
         ('Walking Lunge', 'Walking Lunge'),
         ('Dumbbell Bicep Curl', 'Dumbbell Bicep Curl'),
+        ('Barbell Curl', 'Barbell Curl'),
+        ('Dumbbell Hammer Curl', 'Dumbbell Hammer Curl'),
+        ('Preacher Curl', 'Preacher Curl'),
         ('Triceps Cable Pushdown', 'Triceps Cable Pushdown'),
+        ('Skull Crushers', 'Skull Crushers'),
+        ('Dumbbell Overhead Triceps Extension', 'Dumbbell Overhead Triceps Extension'),
         ('Plank', 'Plank'),
         ('Cable Crunch', 'Cable Crunch'),
     ]
@@ -293,7 +464,7 @@ class CardioLog(models.Model):
     activity = models.CharField(max_length=50, choices=ACTIVITY_CHOICES)
     duration_minutes = models.PositiveSmallIntegerField()
     intensity = models.CharField(max_length=20, choices=INTENSITY_CHOICES)
-    notes = models.CharField(max_length=250, blank=True)
+    notes = models.TextField(blank=True, max_length=2000)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

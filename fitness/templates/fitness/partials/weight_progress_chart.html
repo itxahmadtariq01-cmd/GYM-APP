@@ -1,0 +1,336 @@
+<div class="mt-5" data-weight-chart-root data-today="{{ today }}">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <p class="text-xs text-[#52627A]">Logged body weight (kg)</p>
+        <div class="inline-flex rounded-xl border border-[#D8E1EA] bg-[#F8FAFC] p-1" role="group" aria-label="Weight chart date range">
+            <button type="button" data-weight-range="7" aria-pressed="{% if not weight_goal_chart_data %}true{% else %}false{% endif %}" class="rounded-lg px-3 py-2 text-xs font-semibold text-[#52627A] outline-none transition focus-visible:ring-2 focus-visible:ring-teal-400">7 days</button>
+            <button type="button" data-weight-range="30" aria-pressed="false" class="rounded-lg px-3 py-2 text-xs font-semibold text-[#52627A] outline-none transition focus-visible:ring-2 focus-visible:ring-teal-400">30 days</button>
+            {% if weight_goal_chart_data %}
+            <button type="button" data-weight-range="goal" aria-pressed="true" class="rounded-lg px-3 py-2 text-xs font-semibold text-[#52627A] outline-none transition focus-visible:ring-2 focus-visible:ring-teal-400">Goal</button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mb-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[#52627A]" role="group" aria-label="Chart legend">
+        <span class="inline-flex items-center gap-2"><span class="h-0.5 w-5 rounded bg-teal-700"></span>Actual weigh-ins</span>
+        {% if weight_goal_chart_data %}
+        <span class="inline-flex items-center gap-2"><span class="h-0.5 w-5 border-t-2 border-dashed border-[#E85D45]"></span>Planned goal trajectory · weekly milestones</span>
+        {% endif %}
+    </div>
+
+    <div class="overflow-hidden rounded-2xl border border-[#D8E1EA] bg-[#F8FAFC] p-2 sm:p-4">
+        <p data-chart-readout class="mb-2 min-h-[2.5rem] px-1 text-sm font-semibold text-[#0F1B2D] sm:min-h-[1.5rem]" aria-live="polite" aria-atomic="true"></p>
+        <div class="relative h-56 w-full sm:h-64">
+            <canvas id="weight-progress-chart-{{ chart_id|escapejs }}" data-weight-chart tabindex="0" role="img" aria-label="Chart.js weight progress chart. Use the left and right arrow keys to move between weigh-ins."></canvas>
+        </div>
+        <p data-chart-error class="hidden mt-2 text-xs text-rose-700" role="status"></p>
+    </div>
+
+    <details class="mt-3">
+        <summary class="w-fit cursor-pointer rounded text-xs font-semibold text-teal-800 outline-none focus-visible:ring-2 focus-visible:ring-teal-400">
+            View weigh-in data ({{ weight_chart_data|length }})
+        </summary>
+        <ul class="mt-2 grid max-h-72 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
+            {% for entry in weight_chart_data %}
+            <li class="flex justify-between gap-2 rounded-lg border border-[#D8E1EA] bg-white px-3 py-2 text-xs">
+                <time datetime="{{ entry.date }}">{{ entry.date }}</time>
+                <strong>{{ entry.weight_kg|floatformat:"-2" }} kg</strong>
+            </li>
+            {% empty %}
+            <li class="col-span-full text-xs text-[#52627A]">No weigh-ins recorded for this goal yet.</li>
+            {% endfor %}
+        </ul>
+    </details>
+
+    <dl class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2" aria-label="Today's intake summary">
+        <div class="rounded-xl border border-[#D8E1EA] bg-white p-3">
+            <dt class="text-xs font-semibold text-[#52627A]">Calories logged today</dt>
+            <dd class="mt-1 font-display text-xl font-semibold text-[#0F1B2D]">
+                {{ daily_calorie_total|floatformat:"-2" }}
+                <span class="font-sans text-xs font-medium text-[#52627A]">/ {{ daily_calorie_target|floatformat:"-2" }} kcal reference</span>
+            </dd>
+            <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label="Calories logged against general daily reference" aria-valuenow="{{ daily_calorie_progress }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="h-full rounded-full bg-teal-600" style="width:{{ daily_calorie_progress }}%"></div>
+            </div>
+            <p class="mt-1 text-[10px] text-[#52627A]">General reference only; not a personalized calorie target.</p>
+        </div>
+        <div class="rounded-xl border border-[#D8E1EA] bg-white p-3">
+            <dt class="text-xs font-semibold text-[#52627A]">Water logged today</dt>
+            <dd class="mt-1 font-display text-xl font-semibold text-[#0F1B2D]">{{ daily_water_liters|floatformat:"-2" }} <span class="font-sans text-sm font-medium">L</span></dd>
+            {% if role == 'Member' %}
+            <a class="mt-1 inline-flex text-xs font-semibold text-teal-800 underline underline-offset-2" href="{% url 'member_logging' %}#member-water-section">Update water intake</a>
+            {% else %}
+            <p class="mt-1 text-[10px] text-[#52627A]">Member-reported daily total</p>
+            {% endif %}
+        </div>
+    </dl>
+
+    {% with cid=chart_id|stringformat:"s" %}
+    {% with data_id="weight-progress-data-"|add:cid goal_id="weight-goal-data-"|add:cid %}
+    {{ weight_chart_data|json_script:data_id }}
+    {{ weight_goal_chart_data|json_script:goal_id }}
+    {% endwith %}
+    {% endwith %}
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var script = document.currentScript;
+            var root = script && script.closest ? script.closest('[data-weight-chart-root]') : null;
+            if (!root) return;
+
+            var canvas = root.querySelector('[data-weight-chart]');
+            var readout = root.querySelector('[data-chart-readout]');
+            var errorMessage = root.querySelector('[data-chart-error]');
+            var rangeButtons = Array.prototype.slice.call(root.querySelectorAll('[data-weight-range]'));
+            if (!canvas || !readout || !errorMessage) return;
+
+            if (!window.Chart) {
+                errorMessage.textContent = 'The chart library could not load. The weigh-in table and summaries are still available.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            var dataNode = document.getElementById('weight-progress-data-{{ chart_id|escapejs }}');
+            var goalNode = document.getElementById('weight-goal-data-{{ chart_id|escapejs }}');
+            if (!dataNode || !goalNode) {
+                errorMessage.textContent = 'Weight chart data is unavailable. The weigh-in table and summaries are still available.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            var rawEntries;
+            var rawGoal;
+            try {
+                rawEntries = JSON.parse(dataNode.textContent);
+                rawGoal = JSON.parse(goalNode.textContent);
+            } catch (error) {
+                errorMessage.textContent = 'Weight chart data could not be read. The weigh-in table and summaries are still available.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            function parseDate(value) {
+                if (typeof value !== 'string') return null;
+                var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+                return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+            }
+            function dateKey(date) {
+                return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+            }
+            function addDays(date, days) {
+                var result = new Date(date);
+                result.setDate(result.getDate() + days);
+                return result;
+            }
+            function daysBetween(start, end) {
+                return Math.round((end - start) / 86400000);
+            }
+            function formatWeight(value) {
+                return Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+            }
+            function formatDate(value, withYear) {
+                var date = parseDate(value);
+                return date ? date.toLocaleDateString(undefined, withYear ? { month: 'short', day: 'numeric', year: 'numeric' } : { month: 'short', day: 'numeric' }) : value;
+            }
+
+            var today = parseDate(root.getAttribute('data-today')) || new Date();
+            today.setHours(0, 0, 0, 0);
+            var entries = (Array.isArray(rawEntries) ? rawEntries : []).map(function (entry) {
+                return { date: parseDate(entry.date), weight: Number(entry.weight_kg) };
+            }).filter(function (entry) {
+                return entry.date && Number.isFinite(entry.weight);
+            }).sort(function (left, right) {
+                return left.date - right.date;
+            });
+
+            var goal = null;
+            if (rawGoal && typeof rawGoal === 'object') {
+                var goalStart = parseDate(rawGoal.start_date);
+                var goalEnd = parseDate(rawGoal.target_date);
+                var startWeight = Number(rawGoal.starting_weight_kg);
+                var targetWeight = Number(rawGoal.target_weight_kg);
+                if (goalStart && goalEnd && goalEnd > goalStart && Number.isFinite(startWeight) && Number.isFinite(targetWeight)) {
+                    goal = { start: goalStart, end: goalEnd, startWeight: startWeight, targetWeight: targetWeight };
+                }
+            }
+
+            function goalWeightAt(date) {
+                var duration = daysBetween(goal.start, goal.end);
+                return goal.startWeight + (goal.targetWeight - goal.startWeight) * daysBetween(goal.start, date) / duration;
+            }
+            function visibleWindow(range) {
+                if (range === 'goal' && goal) {
+                    return { start: goal.start, end: goal.end > today ? goal.end : today };
+                }
+                var days = Number(range) || 7;
+                return { start: addDays(today, -(days - 1)), end: today };
+            }
+            function milestoneKeys(start, end) {
+                if (!goal) return [];
+                var first = start > goal.start ? start : goal.start;
+                var last = end < goal.end ? end : goal.end;
+                if (first > last) return [];
+                var keys = [dateKey(first)];
+                var offset = Math.max(0, Math.ceil(daysBetween(goal.start, first) / 7));
+                for (var day = offset * 7; ; day += 7) {
+                    var milestone = addDays(goal.start, day);
+                    if (milestone >= last) break;
+                    if (milestone >= first) keys.push(dateKey(milestone));
+                }
+                if (keys[keys.length - 1] !== dateKey(last)) keys.push(dateKey(last));
+                return keys;
+            }
+
+            var activeRange = goal ? 'goal' : '7';
+            var chart;
+            var actualIndexes = [];
+
+            function setReadout(dateValue, actual, planned) {
+                var parts = [];
+                if (actual !== null && actual !== undefined) parts.push(formatDate(dateValue, true) + ': ' + formatWeight(actual) + ' kg actual');
+                if (planned !== null && planned !== undefined) parts.push(formatWeight(planned) + ' kg planned');
+                readout.textContent = parts.join(' · ') || 'No weigh-ins in this period.';
+            }
+
+            function renderChart(animate) {
+                var rangeWindow = visibleWindow(activeRange);
+                var visibleEntries = entries.filter(function (entry) {
+                    return entry.date >= rangeWindow.start && entry.date <= rangeWindow.end && entry.date <= today;
+                });
+                var dateKeys = visibleEntries.map(function (entry) { return dateKey(entry.date); });
+                if (goal && activeRange === 'goal') dateKeys = dateKeys.concat(milestoneKeys(rangeWindow.start, rangeWindow.end));
+                if (!dateKeys.length) dateKeys.push(dateKey(rangeWindow.start), dateKey(rangeWindow.end));
+                dateKeys = Array.from(new Set(dateKeys)).sort();
+
+                var actualByDate = {};
+                visibleEntries.forEach(function (entry) { actualByDate[dateKey(entry.date)] = entry.weight; });
+                var targetValues = dateKeys.map(function (key) {
+                    var pointDate = parseDate(key);
+                    return goal && pointDate >= goal.start && pointDate <= goal.end ? goalWeightAt(pointDate) : null;
+                });
+                var actualValues = dateKeys.map(function (key) {
+                    return Object.prototype.hasOwnProperty.call(actualByDate, key) ? actualByDate[key] : null;
+                });
+                actualIndexes = actualValues.reduce(function (indexes, value, index) {
+                    if (value !== null) indexes.push(index);
+                    return indexes;
+                }, []);
+
+                if (chart) chart.destroy();
+                chart = new window.Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: dateKeys,
+                        datasets: [
+                            {
+                                label: 'Actual weigh-ins',
+                                data: actualValues,
+                                borderColor: '#0F766E',
+                                backgroundColor: 'rgba(15, 118, 110, 0.12)',
+                                borderWidth: 3,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: '#0F766E',
+                                tension: 0.25,
+                                spanGaps: false
+                            },
+                            {
+                                label: 'Planned goal trajectory (weekly milestones)',
+                                data: targetValues,
+                                borderColor: '#E85D45',
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                borderDash: [6, 5],
+                                pointRadius: activeRange === 'goal' ? 3 : 0,
+                                pointHoverRadius: 5,
+                                pointBackgroundColor: '#E85D45',
+                                tension: 0,
+                                spanGaps: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches ? { duration: 250 } : false,
+                        interaction: { mode: 'nearest', intersect: true },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    title: function (items) { return items.length ? formatDate(items[0].label, true) : ''; },
+                                    label: function (item) { return item.dataset.label + ': ' + formatWeight(item.parsed.y) + ' kg'; }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: {
+                                    maxTicksLimit: 7,
+                                    callback: function (index) { return formatDate(this.getLabelForValue(index), false); }
+                                }
+                            },
+                            y: {
+                                title: { display: true, text: 'Weight (kg)' },
+                                ticks: { callback: function (value) { return value + ' kg'; } }
+                            }
+                        },
+                        onHover: function (event, elements, instance) {
+                            var active = elements && elements.length ? elements[0] : null;
+                            if (!active) return;
+                            var dateValue = instance.data.labels[active.index];
+                            var actual = instance.data.datasets[0].data[active.index];
+                            var planned = instance.data.datasets[1].data[active.index];
+                            setReadout(dateValue, actual, planned);
+                        }
+                    }
+                });
+
+                var latest = visibleEntries[visibleEntries.length - 1];
+                if (latest) {
+                    var latestKey = dateKey(latest.date);
+                    var planned = goal && latest.date >= goal.start && latest.date <= goal.end ? goalWeightAt(latest.date) : null;
+                    setReadout(latestKey, latest.weight, planned);
+                } else if (goal && activeRange === 'goal') {
+                    setReadout(dateKeys[0], null, targetValues[0]);
+                } else {
+                    readout.textContent = 'No weigh-ins in this period.';
+                }
+            }
+
+            rangeButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    activeRange = button.getAttribute('data-weight-range');
+                    rangeButtons.forEach(function (item) {
+                        var selected = item === button;
+                        item.setAttribute('aria-pressed', selected ? 'true' : 'false');
+                        item.classList.toggle('bg-white', selected);
+                        item.classList.toggle('text-teal-800', selected);
+                        item.classList.toggle('shadow-sm', selected);
+                    });
+                    renderChart(false);
+                });
+            });
+
+            canvas.addEventListener('keydown', function (event) {
+                if ((event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') || !actualIndexes.length || !chart) return;
+                event.preventDefault();
+                var current = chart.getActiveElements()[0];
+                var currentPosition = current ? actualIndexes.indexOf(current.index) : -1;
+                var nextPosition = event.key === 'ArrowRight'
+                    ? Math.min(currentPosition + 1, actualIndexes.length - 1)
+                    : Math.max(currentPosition < 0 ? actualIndexes.length - 1 : currentPosition - 1, 0);
+                var index = actualIndexes[nextPosition];
+                chart.setActiveElements([{ datasetIndex: 0, index: index }]);
+                chart.tooltip.setActiveElements([{ datasetIndex: 0, index: index }], { x: 0, y: 0 });
+                chart.update('none');
+                setReadout(chart.data.labels[index], chart.data.datasets[0].data[index], chart.data.datasets[1].data[index]);
+            });
+
+            renderChart(false);
+        }());
+    </script>
+</div>

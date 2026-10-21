@@ -1,0 +1,369 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
+
+<style>
+    /* ==========================================================
+       Design tokens
+       ========================================================== */
+    :root {
+        --ui-bg: #F2F6F9;
+        --ui-surface: #FFFFFF;
+        --ui-surface-soft: #F6F9FB;
+        --ui-line: #E1E8EF;
+        --ui-line-strong: #CBD6E1;
+        --ui-text: #0F1B2D;
+        --ui-text-muted: #52627A;
+
+        /* Brand: darkened slightly so white text on it passes 4.5:1 */
+        --ui-brand: #0A7F7B;
+        --ui-brand-dark: #0A6E8E;
+        --ui-brand-text: #0A7571;
+        --ui-brand-tint: rgba(10, 127, 123, .10);
+        --ui-accent: #B45309;
+
+        --ui-success: #047857;
+        --ui-warning: #B45309;
+        --ui-danger: #BE123C;
+
+        --ui-radius-sm: 10px;
+        --ui-radius: 12px;
+        --ui-radius-lg: 20px;
+
+        --ui-ring: 0 0 0 3px rgba(10, 127, 123, .22);
+        --ui-shadow: 0 1px 2px rgba(15, 27, 45, .04), 0 10px 28px -14px rgba(15, 27, 45, .16);
+        --ui-ease: cubic-bezier(.2, .7, .2, 1);
+
+        color-scheme: light;
+    }
+
+    /* ==========================================================
+       Page base
+       ========================================================== */
+    body.ui-premium {
+        position: relative;
+        min-height: 100vh;
+        min-height: 100dvh;
+        background-color: var(--ui-bg);
+        color: var(--ui-text);
+        font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Fixed glow layer. Replaces background-attachment: fixed,
+       which is janky on iOS and forces repaints while scrolling. */
+    body.ui-premium::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background-image:
+            radial-gradient(900px 500px at 100% -10%, rgba(18, 168, 161, .10), transparent 60%),
+            radial-gradient(700px 420px at -10% 110%, rgba(255, 107, 74, .07), transparent 60%);
+    }
+
+    .ui-premium .font-display {
+        font-family: 'Barlow Condensed', 'Manrope', sans-serif;
+        letter-spacing: .01em;
+    }
+
+    .ui-premium h1,
+    .ui-premium h2,
+    .ui-premium h3 {
+        text-wrap: balance;
+    }
+
+    .ui-premium p {
+        text-wrap: pretty;
+    }
+
+    /* Lined-up digits for weights, reps, dates and prices */
+    .ui-premium table,
+    .ui-premium .font-display,
+    .ui-premium [role="progressbar"] + *,
+    .ui-premium .tabular {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .ui-premium ::selection {
+        background: var(--ui-brand);
+        color: #fff;
+    }
+
+    /* ==========================================================
+       Legacy palette remap
+       Old green/cream utility colours are mapped onto the new
+       teal system. Specificity (0,2,0) already beats Tailwind's
+       single-class rules, so !important is only kept on the
+       hover rule where variants compete.
+       ========================================================== */
+    .ui-premium [class~="bg-[#1F4D3A]"] {
+        background-color: var(--ui-brand);
+    }
+
+    .ui-premium [class~="bg-[#1F4D3A]/10"] {
+        background-color: var(--ui-brand-tint);
+    }
+
+    .ui-premium [class~="hover:bg-[#173c2d]"]:hover {
+        background-color: var(--ui-brand-dark) !important;
+    }
+
+    .ui-premium :is(
+        [class~="bg-[#F4F2EA]"],
+        [class~="bg-[#F9F8F3]"],
+        [class~="bg-[#FCFBF8]"]
+    ) {
+        background-color: var(--ui-surface-soft);
+    }
+
+    .ui-premium :is(
+        [class~="text-[#14231C]"],
+        [class~="text-[#1B241E]"]
+    ) {
+        color: var(--ui-text);
+    }
+
+    .ui-premium [class~="text-[#1F4D3A]"] {
+        color: var(--ui-brand-text);
+    }
+
+    .ui-premium :is(
+        [class~="text-[#4B5750]"],
+        [class~="text-[#6B7568]"],
+        [class~="text-[#8B8577]"]
+    ) {
+        color: var(--ui-text-muted);
+    }
+
+    .ui-premium :is(
+        [class~="text-[#9A7A3F]"],
+        [class~="text-[#765A2D]"],
+        [class~="text-[#A87C3F]"]
+    ) {
+        color: var(--ui-accent);
+    }
+
+    .ui-premium :is(
+        [class~="border-[#E7E3D6]"],
+        [class~="border-[#DCD8CB]"],
+        [class~="border-[#EEEBDD]"]
+    ) {
+        border-color: var(--ui-line);
+    }
+
+    /* ==========================================================
+       Cards
+       ========================================================== */
+    .ui-premium main section[class*="bg-white"],
+    .ui-premium main article[class*="bg-white"],
+    .ui-premium main > div[class*="bg-white"] {
+        border-color: var(--ui-line);
+        border-radius: var(--ui-radius-lg);
+        box-shadow: var(--ui-shadow);
+    }
+
+    /* ==========================================================
+       Forms
+       ========================================================== */
+    .ui-premium input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    .ui-premium select,
+    .ui-premium textarea {
+        min-height: 2.75rem;
+        border-color: var(--ui-line) !important;
+        border-radius: var(--ui-radius);
+        background-color: var(--ui-surface-soft) !important;
+        color: var(--ui-text) !important;
+        transition: border-color .2s var(--ui-ease), box-shadow .2s var(--ui-ease), background-color .2s var(--ui-ease);
+    }
+
+    .ui-premium textarea {
+        min-height: 6rem;
+    }
+
+    .ui-premium ::placeholder {
+        color: #8696AB;
+        opacity: 1;
+    }
+
+    .ui-premium input:hover:not(:disabled):not(:focus),
+    .ui-premium select:hover:not(:disabled):not(:focus),
+    .ui-premium textarea:hover:not(:disabled):not(:focus) {
+        border-color: var(--ui-line-strong) !important;
+    }
+
+    .ui-premium input:focus,
+    .ui-premium select:focus,
+    .ui-premium textarea:focus {
+        border-color: var(--ui-brand) !important;
+        background-color: var(--ui-surface) !important;
+        box-shadow: var(--ui-ring);
+        outline: none;
+    }
+
+    .ui-premium input:disabled,
+    .ui-premium select:disabled,
+    .ui-premium textarea:disabled {
+        cursor: not-allowed;
+        opacity: .6;
+    }
+
+    /* Validation: only after the user has typed something */
+    .ui-premium input:user-invalid,
+    .ui-premium select:user-invalid,
+    .ui-premium textarea:user-invalid,
+    .ui-premium [aria-invalid="true"] {
+        border-color: var(--ui-danger) !important;
+    }
+
+    .ui-premium input:user-invalid:focus,
+    .ui-premium [aria-invalid="true"]:focus {
+        box-shadow: 0 0 0 3px rgba(190, 18, 60, .18);
+    }
+
+    .ui-premium input[type="checkbox"],
+    .ui-premium input[type="radio"],
+    .ui-premium input[type="range"] {
+        accent-color: var(--ui-brand);
+    }
+
+    /* ==========================================================
+       Buttons
+       Pills (rounded-full) keep their own shape.
+       ========================================================== */
+    .ui-premium button:not([class*="rounded-full"]),
+    .ui-premium [role="button"]:not([class*="rounded-full"]) {
+        border-radius: var(--ui-radius);
+    }
+
+    .ui-premium button,
+    .ui-premium [role="button"] {
+        transition: background-color .2s var(--ui-ease), border-color .2s var(--ui-ease), color .2s var(--ui-ease),
+                    box-shadow .2s var(--ui-ease), transform .2s var(--ui-ease);
+    }
+
+    .ui-premium button:not(:disabled):active,
+    .ui-premium [role="button"]:active {
+        transform: translateY(1px) scale(.99);
+    }
+
+    .ui-premium button:disabled,
+    .ui-premium [aria-disabled="true"] {
+        cursor: not-allowed;
+    }
+
+    /* ==========================================================
+       Keyboard focus
+       ========================================================== */
+    .ui-premium :is(button, a, summary, [role="button"], [tabindex]):focus-visible {
+        outline: 3px solid rgba(10, 127, 123, .45);
+        outline-offset: 3px;
+    }
+
+    /* ==========================================================
+       Tables
+       ========================================================== */
+    .ui-premium table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .ui-premium th {
+        background: var(--ui-surface-soft);
+        color: var(--ui-text-muted);
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: .02em;
+    }
+
+    .ui-premium th,
+    .ui-premium td {
+        border-bottom: 1px solid var(--ui-line);
+        padding: .8rem 1rem;
+        text-align: left;
+    }
+
+    .ui-premium tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .ui-premium tbody tr {
+        transition: background-color .15s var(--ui-ease);
+    }
+
+    .ui-premium tbody tr:hover td {
+        background-color: var(--ui-surface-soft);
+    }
+
+    /* Numeric columns: add class="num" to th/td */
+    .ui-premium :is(th, td).num {
+        text-align: right;
+    }
+
+    /* Long tables scroll inside their container, not the page */
+    .ui-premium .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* ==========================================================
+       Small screens
+       ========================================================== */
+    @media (max-width: 640px) {
+        .ui-premium th,
+        .ui-premium td {
+            padding: .65rem .75rem;
+        }
+
+        .ui-premium main section[class*="bg-white"],
+        .ui-premium main article[class*="bg-white"],
+        .ui-premium main > div[class*="bg-white"] {
+            border-radius: 16px;
+        }
+    }
+
+    /* ==========================================================
+       Accessibility and print
+       ========================================================== */
+    @media (prefers-reduced-motion: reduce) {
+        .ui-premium *,
+        .ui-premium *::before,
+        .ui-premium *::after {
+            scroll-behavior: auto !important;
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .01ms !important;
+        }
+
+        .ui-premium button:not(:disabled):active {
+            transform: none;
+        }
+    }
+
+    @media (forced-colors: active) {
+        .ui-premium :is(button, input, select, textarea) {
+            border: 1px solid ButtonText;
+        }
+    }
+
+    @media print {
+        body.ui-premium {
+            background: #fff;
+        }
+
+        body.ui-premium::before {
+            display: none;
+        }
+
+        .ui-premium main section[class*="bg-white"],
+        .ui-premium main article[class*="bg-white"] {
+            box-shadow: none;
+            break-inside: avoid;
+        }
+    }
+</style>

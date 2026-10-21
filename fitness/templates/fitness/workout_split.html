@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Training Schedule — Caliber Labs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+    </style>
+    {% include 'fitness/partials/premium_ui_styles.html' %}
+</head>
+<body class="ui-premium min-h-screen bg-[#F4F2EA] pb-20 text-[#1B241E] antialiased md:pb-0 md:pl-64">
+    {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
+    <header class="flex min-h-20 items-center justify-between gap-4 border-b border-[#E7E3D6] bg-white px-4 sm:px-8">
+        <div class="flex min-w-0 items-center gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1F4D3A] text-white"><i class="fa-solid fa-calendar-week" aria-hidden="true"></i></span>
+            <div>
+                <span class="block truncate font-display text-sm font-bold text-[#14231C]">Caliber Labs</span>
+                <span class="text-[10px] text-[#6B7568]">Personal training schedule</span>
+            </div>
+        </div>
+        <a href="{% url 'dashboard' %}" class="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#E7E3D6] bg-[#F4F2EA] px-3 py-2.5 text-xs font-semibold text-[#1F4D3A] hover:bg-[#eae6db]">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>Dashboard</span>
+        </a>
+    </header>
+
+    <main class="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+        <section class="rounded-3xl bg-[#1F4D3A] p-6 text-white shadow-sm sm:p-8">
+            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100">Weekly schedule</p>
+            <div class="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h1 class="font-display text-2xl font-bold tracking-tight sm:text-3xl">Plan your weekly training</h1>
+                    <p class="mt-2 max-w-2xl text-sm leading-relaxed text-emerald-50">Choose training days and muscle groups to build a weekly schedule. Explore suggested exercises and technique references from the Caliber library.</p>
+                </div>
+                <span class="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-[11px] font-semibold text-white"><i class="fa-solid fa-lock" aria-hidden="true"></i> Saved to your account</span>
+            </div>
+        </section>
+
+        {% include 'fitness/partials/quick_navigation_cards.html' %}
+
+        {% if messages %}
+        <div class="space-y-2" aria-live="polite">
+            {% for message in messages %}
+            <p class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-[#1F4D3A]" role="status">{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if split_error %}
+        <p class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800" role="alert">{{ split_error }}</p>
+        {% endif %}
+
+        <form id="split-form" method="post" class="space-y-6">
+            {% csrf_token %}
+            <input id="split-data-input" type="hidden" name="split_data" value="">
+            <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <section class="space-y-5 rounded-2xl border border-[#E7E3D6] bg-white p-5 shadow-sm sm:p-6" aria-labelledby="split-editor-title">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wide text-[#9A7A3F]">Step 1 · Create your schedule</p>
+                        <h2 id="split-editor-title" class="mt-1 font-display text-xl font-bold text-[#14231C]">Schedule details</h2>
+                    </div>
+
+                    <div>
+                        <label for="split-title" class="mb-1.5 block text-xs font-semibold text-[#14231C]">Schedule name</label>
+                        <input id="split-title" name="title" type="text" maxlength="100" required value="{{ split_title }}" class="w-full rounded-xl border border-[#E7E3D6] bg-[#F9F8F3] px-3 py-3 text-sm outline-none focus:border-[#1F4D3A]">
+                    </div>
+
+                    <div class="rounded-2xl border border-[#E7E3D6] bg-[#F9F8F3] p-4 sm:p-5">
+                        <label for="split-weekday" class="mb-1.5 block text-xs font-semibold text-[#14231C]">Choose a day</label>
+                        <select id="split-weekday" class="w-full rounded-xl border border-[#E7E3D6] bg-white px-3 py-3 text-sm outline-none focus:border-[#1F4D3A]">
+                            {% for value, label in weekday_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <div class="mt-4">
+                            <p class="text-xs font-semibold text-[#14231C]">Quick pairing suggestions</p>
+                            <p class="mt-1 text-[10px] text-[#6B7568]">Choose a pairing to select its muscle groups, then add the day.</p>
+                            <div class="mt-2 flex flex-wrap gap-2" role="group" aria-label="Suggested workout splits">
+                                <button type="button" data-muscle-preset="chest-triceps" class="rounded-full border border-[#D6E7DD] bg-emerald-50 px-3 py-2 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">Chest + Triceps</button>
+                                <button type="button" data-muscle-preset="back-biceps" class="rounded-full border border-[#D6E7DD] bg-emerald-50 px-3 py-2 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">Back + Biceps</button>
+                                <button type="button" data-muscle-preset="upper" class="rounded-full border border-[#D6E7DD] bg-emerald-50 px-3 py-2 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">Upper body</button>
+                                <button type="button" data-muscle-preset="lower" class="rounded-full border border-[#D6E7DD] bg-emerald-50 px-3 py-2 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">Lower body</button>
+                                <button type="button" data-muscle-preset="push" class="rounded-full border border-[#D6E7DD] bg-emerald-50 px-3 py-2 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">Push</button>
+                                <button type="button" data-muscle-preset="pull" class="rounded-full border border-[#D6E7DD] bg-emerald-50 px-3 py-2 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">Pull</button>
+                                <button type="button" data-muscle-preset="full" class="rounded-full border border-[#D6E7DD] bg-emerald-50 px-3 py-2 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">Full body</button>
+                            </div>
+                        </div>
+
+                        <fieldset class="mt-5">
+                            <legend class="text-xs font-semibold text-[#14231C]">Muscle targets <span class="font-normal text-[#6B7568]">(select all that apply)</span></legend>
+                            <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                {% for value, label in muscle_groups %}
+                                <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-[#E7E3D6] bg-white px-3 py-3 text-xs font-semibold text-[#4B5750] transition hover:border-emerald-300 has-[:checked]:border-[#1F4D3A] has-[:checked]:bg-emerald-50 has-[:checked]:text-[#1F4D3A]">
+                                    <input class="muscle-choice accent-[#1F4D3A]" type="checkbox" value="{{ value }}">
+                                    <span>{{ label }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                        <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <button id="add-split-day" type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F4D3A] px-4 py-3 text-xs font-semibold text-white hover:bg-[#173c2d]">
+                                <i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add training day</span>
+                            </button>
+                            <p class="text-[11px] text-[#6B7568]">Add a day again to update its muscle groups.</p>
+                        </div>
+                    </div>
+                    <p id="split-editor-status" class="min-h-5 text-xs text-[#6B7568]" aria-live="polite"></p>
+                </section>
+
+                <section class="rounded-2xl border border-[#E7E3D6] bg-white p-5 shadow-sm sm:p-6" aria-labelledby="split-preview-title">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-wide text-[#9A7A3F]">Step 2 · Review your schedule</p>
+                            <h2 id="split-preview-title" class="mt-1 font-display text-xl font-bold text-[#14231C]">Weekly overview</h2>
+                            <p class="mt-1 text-xs text-[#6B7568]">Rest days remain open. Edit or remove training days as your schedule changes.</p>
+                        </div>
+                        <span id="split-day-count" class="w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] font-bold text-[#1F4D3A]"></span>
+                    </div>
+                    <div id="split-schedule-preview" class="mt-5 space-y-4" aria-live="polite"></div>
+                    <p id="split-empty-state" class="mt-5 rounded-xl border border-dashed border-[#D5D0C1] bg-[#F9F8F3] px-4 py-8 text-center text-sm text-[#6B7568]">No training days added. Choose a day and muscle groups to get started.</p>
+                    <p id="split-save-error" class="mt-3 hidden text-xs font-semibold text-rose-700" role="alert">Add at least one training day and muscle group before saving.</p>
+                    <div class="mt-6 flex flex-col-reverse gap-2 border-t border-[#E7E3D6] pt-5 sm:flex-row sm:justify-end">
+                        <a href="{% url 'dashboard' %}" class="rounded-xl border border-[#E7E3D6] px-5 py-3 text-center text-xs font-semibold text-[#4B5750] hover:bg-[#F4F2EA]">Cancel</a>
+                        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F4D3A] px-5 py-3 text-xs font-semibold text-white hover:bg-[#173c2d]">
+                            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save weekly schedule
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </form>
+        <p class="text-center text-[10px] leading-relaxed text-[#6B7568]">Exercise selections are suggestions, not a prescribed training plan. Adjust movements to your ability and stop if you feel sharp pain.</p>
+    </main>
+
+    {{ split_data|json_script:"initial-split-data" }}
+    {{ weekday_choices|json_script:"weekday-options" }}
+    {{ muscle_groups|json_script:"muscle-options" }}
+    {{ exercise_guides|json_script:"exercise-library" }}
+    <script>
+        (() => {
+            const dayNames = JSON.parse(document.getElementById('weekday-options').textContent);
+            const muscleOptions = JSON.parse(document.getElementById('muscle-options').textContent);
+            const exerciseLibrary = JSON.parse(document.getElementById('exercise-library').textContent);
+            const state = JSON.parse(document.getElementById('initial-split-data').textContent);
+            const daySelect = document.getElementById('split-weekday');
+            const choices = [...document.querySelectorAll('.muscle-choice')];
+            const musclePresets = {
+                'chest-triceps': ['Chest', 'Triceps'],
+                'back-biceps': ['Back', 'Biceps'],
+                upper: ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps'],
+                lower: ['Legs', 'Core'],
+                push: ['Chest', 'Shoulders', 'Triceps'],
+                pull: ['Back', 'Biceps'],
+                full: ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core']
+            };
+            const preview = document.getElementById('split-schedule-preview');
+            const emptyState = document.getElementById('split-empty-state');
+            const status = document.getElementById('split-editor-status');
+            const saveError = document.getElementById('split-save-error');
+            const count = document.getElementById('split-day-count');
+            const dataInput = document.getElementById('split-data-input');
+            const form = document.getElementById('split-form');
+
+            const button = (label, className, onClick) => {
+                const element = document.createElement('button');
+                element.type = 'button';
+                element.className = className;
+                element.textContent = label;
+                element.addEventListener('click', onClick);
+                return element;
+            };
+
+            const setEditor = (weekday, groups) => {
+                daySelect.value = String(weekday);
+                choices.forEach((choice) => {
+                    choice.checked = groups.includes(choice.value);
+                });
+            };
+
+            const render = () => {
+                preview.replaceChildren();
+                const weekdays = Object.keys(state).map(Number).sort((a, b) => a - b);
+                emptyState.classList.toggle('hidden', weekdays.length > 0);
+                count.textContent = `${weekdays.length} ${weekdays.length === 1 ? 'training day' : 'training days'}`;
+                dataInput.value = JSON.stringify(state);
+
+                weekdays.forEach((weekday) => {
+                    const groups = state[String(weekday)];
+                    const article = document.createElement('article');
+                    article.className = 'overflow-hidden rounded-2xl border border-[#E7E3D6] bg-white';
+                    const header = document.createElement('div');
+                    header.className = 'flex flex-col gap-3 border-b border-[#E7E3D6] bg-[#F9F8F3] p-4 sm:flex-row sm:items-center sm:justify-between';
+                    const heading = document.createElement('div');
+                    const title = document.createElement('h3');
+                    title.className = 'font-display text-base font-bold text-[#14231C]';
+                    title.textContent = dayNames[weekday][1];
+                    const badges = document.createElement('div');
+                    badges.className = 'mt-2 flex flex-wrap gap-1.5';
+                    groups.forEach((group) => {
+                        const badge = document.createElement('span');
+                        badge.className = 'rounded-full border border-emerald-100 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#1F4D3A]';
+                        badge.textContent = group;
+                        badges.append(badge);
+                    });
+                    heading.append(title, badges);
+                    const actions = document.createElement('div');
+                    actions.className = 'flex gap-2';
+                    actions.append(
+                        button('Edit', 'rounded-lg border border-[#E7E3D6] bg-white px-3 py-2 text-[10px] font-semibold text-[#4B5750] hover:bg-emerald-50', () => {
+                            setEditor(weekday, groups);
+                            status.textContent = `Editing ${dayNames[weekday][1]}. Update the muscle targets and add the day again.`;
+                        }),
+                        button('Remove', 'rounded-lg border border-rose-100 bg-white px-3 py-2 text-[10px] font-semibold text-rose-700 hover:bg-rose-50', () => {
+                            delete state[String(weekday)];
+                            render();
+                            status.textContent = `${dayNames[weekday][1]} removed from your week.`;
+                        })
+                    );
+                    header.append(heading, actions);
+                    article.append(header);
+
+                    const exerciseSection = document.createElement('div');
+                    exerciseSection.className = 'grid gap-4 p-4 sm:grid-cols-2';
+                    groups.forEach((group) => {
+                        const groupSection = document.createElement('section');
+                        const groupHeading = document.createElement('h4');
+                        groupHeading.className = 'text-[10px] font-bold uppercase tracking-wide text-[#6B7568]';
+                        groupHeading.textContent = `${group} exercise ideas`;
+                        const list = document.createElement('ul');
+                        list.className = 'mt-2 space-y-2';
+                        exerciseLibrary.filter((exercise) => exercise.muscle_group === group).forEach((exercise) => {
+                            const item = document.createElement('li');
+                            item.className = 'rounded-xl border border-[#E7E3D6] bg-[#F9F8F3] p-3';
+                            const name = document.createElement('p');
+                            name.className = 'text-xs font-semibold text-[#14231C]';
+                            name.textContent = exercise.name;
+                            const description = document.createElement('p');
+                            description.className = 'mt-1 text-[10px] leading-relaxed text-[#6B7568]';
+                            description.textContent = exercise.description;
+                            item.append(name, description);
+                            if (exercise.embed_url) {
+                                const player = document.createElement('iframe');
+                                player.className = 'mt-3 w-full aspect-video rounded-xl shadow-md';
+                                player.src = exercise.embed_url;
+                                player.title = `${exercise.name} video demonstration`;
+                                player.loading = 'lazy';
+                                player.referrerPolicy = 'strict-origin-when-cross-origin';
+                                player.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                                player.allowFullscreen = true;
+                                item.append(player);
+                            } else {
+                                const unavailable = document.createElement('p');
+                                unavailable.className = 'mt-3 text-[10px] text-[#6B7568]';
+                                unavailable.textContent = 'No embeddable video reference is available yet.';
+                                item.append(unavailable);
+                            }
+                            list.append(item);
+                        });
+                        groupSection.append(groupHeading, list);
+                        exerciseSection.append(groupSection);
+                    });
+                    article.append(exerciseSection);
+                    preview.append(article);
+                });
+            };
+
+            document.getElementById('add-split-day').addEventListener('click', () => {
+                const selectedGroups = choices.filter((choice) => choice.checked).map((choice) => choice.value);
+                if (!selectedGroups.length) {
+                    status.textContent = 'Choose at least one muscle target for this day.';
+                    return;
+                }
+                const weekday = daySelect.value;
+                state[weekday] = selectedGroups;
+                render();
+                status.textContent = `${dayNames[Number(weekday)][1]} added to your week.`;
+                saveError.classList.add('hidden');
+            });
+
+            document.querySelectorAll('[data-muscle-preset]').forEach((presetButton) => {
+                presetButton.addEventListener('click', () => {
+                    const groups = musclePresets[presetButton.dataset.musclePreset];
+                    choices.forEach((choice) => {
+                        choice.checked = groups.includes(choice.value);
+                    });
+                    status.textContent = `${presetButton.textContent} pairing selected for ${dayNames[Number(daySelect.value)][1]}. Review the targets, then add the day.`;
+                });
+            });
+
+            form.addEventListener('submit', (event) => {
+                if (!Object.keys(state).length) {
+                    event.preventDefault();
+                    saveError.classList.remove('hidden');
+                }
+            });
+
+            render();
+        })();
+    </script>
+</body>
+</html>

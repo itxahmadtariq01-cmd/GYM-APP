@@ -11,8 +11,9 @@
         body { font-family: 'Inter', sans-serif; }
         .font-display { font-family: 'Space Grotesk', sans-serif; }
     </style>
+    {% include 'fitness/partials/premium_ui_styles.html' %}
 </head>
-<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] antialiased pb-24 md:pl-64 md:pb-0">
+<body class="ui-premium bg-[#F4F2EA] min-h-screen text-[#1B241E] antialiased pb-24 md:pl-64 md:pb-0">
     {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
     <header class="bg-white border-b border-[#E7E3D6]">
         <div class="max-w-7xl mx-auto min-h-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
@@ -31,7 +32,8 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-        <section class="bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-7 shadow-sm">
+        {% include 'fitness/partials/quick_navigation_cards.html' %}
+        <section id="report-summary" class="bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-7 shadow-sm">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                 <div class="flex items-center gap-4 min-w-0">
                     <span class="w-14 h-14 rounded-2xl bg-emerald-50 text-[#1F4D3A] flex items-center justify-center font-display text-xl font-bold shrink-0">{{ member.username|slice:":1"|upper }}</span>
@@ -50,7 +52,7 @@
             </div>
         </section>
 
-        <section class="bg-white border border-[#E7E3D6] rounded-3xl shadow-sm overflow-hidden">
+        <section id="report-timeline" class="bg-white border border-[#E7E3D6] rounded-3xl shadow-sm overflow-hidden">
             <div class="px-5 sm:px-7 py-4 border-b border-[#E7E3D6]">
                 <h2 class="font-display text-base font-bold text-[#14231C]">Daily activity timeline</h2>
                 <p class="text-[11px] text-[#6B7568] mt-1">Submitted records grouped from earliest to latest date.</p>
@@ -86,6 +88,7 @@
                                             {% empty %}{% if workout.exercise_details %}<li class="whitespace-pre-line">{{ workout.exercise_details }}</li>{% else %}<li>No exercise details submitted.</li>{% endif %}{% endfor %}
                                         </ul>
                                     {% endif %}
+                                    {% if workout.notes %}<p class="mt-1 whitespace-pre-line break-words text-[11px] text-[#52627A]"><strong>Notes:</strong> {{ workout.notes }}</p>{% endif %}
                                 </article>
                             {% empty %}<p class="text-[11px] text-[#9B968A]">No strength entries.</p>{% endfor %}
                         </div>
@@ -96,7 +99,7 @@
                                 <article class="border-l-2 border-sky-200 pl-3 py-1.5 mb-3">
                                     <div class="flex justify-between items-baseline gap-2"><p class="text-xs font-semibold text-[#14231C]">{{ session.activity }}</p><time class="text-[10px] text-[#8B8577]">{{ session.created_at|date:"H:i" }}</time></div>
                                     <p class="text-[11px] text-[#6B7568] mt-1">{{ session.duration_minutes }} min · {{ session.intensity }} intensity</p>
-                                    {% if session.notes %}<p class="text-[11px] text-[#6B7568] mt-1 break-words">{{ session.notes }}</p>{% endif %}
+                                    {% if session.notes %}<p class="text-[11px] text-[#6B7568] mt-1 whitespace-pre-line break-words">{{ session.notes }}</p>{% endif %}
                                 </article>
                             {% empty %}<p class="text-[11px] text-[#9B968A]">No cardio entries.</p>{% endfor %}
                         </div>

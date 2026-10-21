@@ -1,0 +1,24 @@
+{% comment %}
+  One navigation link.
+  Params: href (empty = disabled), label, icon, variant ("side" | "bar"),
+          fragment (optional #anchor), match_path (mark current by path even with a fragment), note (disabled badge).
+  A link is "current" when the page path matches and it has no #fragment (or match_path is set).
+{% endcomment %}
+{% if request.path == href %}{% if not fragment or match_path %}{% firstof "1" as is_current %}{% endif %}{% endif %}
+
+{% if variant == "bar" %}
+    <a href="{{ href }}{{ fragment }}" {% if is_current %}aria-current="page"{% endif %}
+       class="flex min-h-16 flex-1 flex-col items-center justify-center gap-1 border-t-2 px-1 text-center text-[11px] font-semibold leading-tight outline-none transition-colors focus-visible:bg-teal-50 {% if is_current %}border-teal-700 text-teal-800{% else %}border-transparent text-[#52627A] hover:text-[#0F1B2D]{% endif %}">
+        <i class="fa-solid {{ icon }} text-lg" aria-hidden="true"></i><span>{{ label }}</span>
+    </a>
+{% elif href %}
+    <a href="{{ href }}{{ fragment }}" {% if is_current %}aria-current="page"{% endif %}
+       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-teal-400 {% if is_current %}bg-teal-50 text-teal-800{% else %}text-[#52627A] hover:bg-slate-50 hover:text-[#0F1B2D]{% endif %}">
+        <i class="fa-solid {{ icon }} w-5 text-center" aria-hidden="true"></i>{{ label }}
+    </a>
+{% else %}
+    <span aria-disabled="true" class="flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#8696AB]">
+        <i class="fa-solid {{ icon }} w-5 text-center" aria-hidden="true"></i>{{ label }}
+        {% if note %}<span class="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-[#52627A]">{{ note }}</span>{% endif %}
+    </span>
+{% endif %}

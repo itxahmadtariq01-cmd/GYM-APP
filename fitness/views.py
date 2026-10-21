@@ -1,9 +1,14 @@
+import json
 import re
+from datetime import timedelta
+from decimal import Decimal
 from html import escape as escape_html
 from django.contrib import messages
+from django.contrib.auth.views import LoginView
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import login
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
@@ -13,7 +18,6 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
-from urllib.parse import quote_plus
 from .decorators import permission_required
 from .models import (
     Attendance,
@@ -25,9 +29,14 @@ from .models import (
     Role,
     TrainerMemberAssignment,
     TrainerProfile,
+    WeightGoal,
+    WeightLog,
+    WaterLog,
     WorkoutExerciseLog,
     WorkoutLog,
     WorkoutPlan,
+    WorkoutSplit,
+    WorkoutSplitDay,
 )
 from .forms import (
     CustomUserCreationForm,
@@ -36,6 +45,7 @@ from .forms import (
     TrainerProfileForm,
 )
 from google import genai
+from .video_utils import youtube_embed_url
 
 # Check if user is Admin or Staff
 def is_admin(user):
@@ -54,6 +64,13 @@ def is_admin_or_trainer(user):
     return is_admin(user) or is_trainer(user)
 
 
+class RoleBasedLoginView(LoginView):
+    def get_default_redirect_url(self):
+        if is_admin_or_trainer(self.request.user):
+            return reverse('dashboard')
+        return reverse('member_logging')
+
+
 WORKOUT_MUSCLE_SPLITS = tuple(value for value, _ in WorkoutLog.MUSCLE_SPLIT_CHOICES)
 WORKOUT_EXERCISES = tuple(value for value, _ in WorkoutExerciseLog.EXERCISE_CHOICES)
 EXERCISE_GROUP_BY_NAME = {
@@ -69,7 +86,12 @@ EXERCISE_GROUP_BY_NAME = {
     'Dumbbell Lateral Raise': 'Shoulders',
     'Face Pull': 'Shoulders',
     'Dumbbell Bicep Curl': 'Biceps',
+    'Barbell Curl': 'Biceps',
+    'Dumbbell Hammer Curl': 'Biceps',
+    'Preacher Curl': 'Biceps',
     'Triceps Cable Pushdown': 'Triceps',
+    'Skull Crushers': 'Triceps',
+    'Dumbbell Overhead Triceps Extension': 'Triceps',
     'Barbell Squat': 'Legs',
     'Leg Press': 'Legs',
     'Romanian Deadlift': 'Legs',
@@ -90,6 +112,9 @@ WORKOUT_EXERCISE_DESCRIPTIONS = {
     'Overhead Press': 'Brace the midsection and press overhead with the bar traveling close to the face.',
     'Dumbbell Lateral Raise': 'Raise the weights out to the sides with relaxed shoulders and a slight bend in the elbows.',
     'Face Pull': 'Pull the rope toward eye level and separate the hands while keeping elbows high.',
+    'Barbell Curl': 'Stand tall with elbows close to your sides and curl the bar without swinging your torso.',
+    'Dumbbell Hammer Curl': 'Keep palms facing each other, elbows close to your sides, and lower the dumbbells under control.',
+    'Preacher Curl': 'Keep your upper arms supported on the pad and curl smoothly without lifting your elbows.',
     'Barbell Squat': 'Brace before descending, keep the whole foot grounded, and track knees in line with toes.',
     'Leg Press': 'Keep hips against the pad and lower only as far as you can without the lower back rounding.',
     'Romanian Deadlift': 'Push hips back with a soft knee bend and keep the weights close to the legs.',
@@ -97,15 +122,44 @@ WORKOUT_EXERCISE_DESCRIPTIONS = {
     'Walking Lunge': 'Take a stable step, lower both knees under control, and push through the front foot to stand.',
     'Dumbbell Bicep Curl': 'Keep elbows near the sides and curl without swinging the torso.',
     'Triceps Cable Pushdown': 'Pin elbows by the ribs and extend the arms fully without leaning over the cable.',
+    'Skull Crushers': 'Keep upper arms steady and lower the weight toward the forehead before extending your elbows.',
+    'Dumbbell Overhead Triceps Extension': 'Keep elbows pointing forward and lower the dumbbell behind your head with a controlled stretch.',
     'Plank': 'Stack shoulders over elbows and keep ribs, hips, and heels in one straight line.',
     'Cable Crunch': 'Curl the ribs toward the pelvis while keeping hips mostly still.',
+}
+WORKOUT_EXERCISE_VIDEO_URLS = {
+    'Barbell Bench Press': 'https://www.youtube.com/watch?v=rT7DgCr-3pg',
+    'Incline Dumbbell Press': 'https://www.youtube.com/watch?v=IP4oeKh1Sd4',
+    'Dumbbell Fly': 'https://www.youtube.com/watch?v=eozdVDA78K0',
+    'Push-up': 'https://www.youtube.com/watch?v=WDIpL0pjun0',
+    'Lat Pulldown': 'https://www.youtube.com/watch?v=SALxEARiMkw',
+    'Barbell Row': 'https://www.youtube.com/watch?v=RQU8wZPbioA',
+    'Seated Cable Row': 'https://www.youtube.com/watch?v=xQNrFHEMhI4',
+    'Assisted Pull-up': 'https://www.youtube.com/watch?v=wFj808u2HWU',
+    'Overhead Press': 'https://www.youtube.com/watch?v=KP1sYz2VICk',
+    'Dumbbell Lateral Raise': 'https://www.youtube.com/watch?v=XPPfnSEATJA',
+    'Face Pull': 'https://www.youtube.com/watch?v=0Po47vvj9g4',
+    'Dumbbell Bicep Curl': 'https://www.youtube.com/watch?v=sAq_ocpRh_I',
+    'Barbell Curl': 'https://www.youtube.com/watch?v=kwG2ipFRgfo',
+    'Dumbbell Hammer Curl': 'https://www.youtube.com/watch?v=zC3nLlEvin4',
+    'Preacher Curl': 'https://www.youtube.com/watch?v=fIWP-FRFNU0',
+    'Triceps Cable Pushdown': 'https://www.youtube.com/watch?v=-zLyUAo1gMw',
+    'Skull Crushers': 'https://www.youtube.com/watch?v=d_KZxkY_0cM',
+    'Dumbbell Overhead Triceps Extension': 'https://www.youtube.com/watch?v=YbX7Wd8jQ-Q',
+    'Barbell Squat': 'https://www.youtube.com/watch?v=-bJIpOq-LWk',
+    'Leg Press': 'https://www.youtube.com/watch?v=nDh_BlnLCGc',
+    'Romanian Deadlift': 'https://www.youtube.com/watch?v=3VXmecChYYM',
+    'Leg Curl': 'https://www.youtube.com/watch?v=t9sTSr-JYSs',
+    'Walking Lunge': 'https://www.youtube.com/watch?v=tQNktxPkSeE',
+    'Plank': 'https://www.youtube.com/watch?v=pvIjsG5Svck',
+    'Cable Crunch': 'https://www.youtube.com/watch?v=3qjoXDTuyOE',
 }
 WORKOUT_EXERCISE_GUIDES = tuple(
     {
         'name': exercise,
         'description': WORKOUT_EXERCISE_DESCRIPTIONS[exercise],
         'muscle_group': EXERCISE_GROUP_BY_NAME[exercise],
-        'video_url': f'https://www.youtube.com/results?search_query={quote_plus(f"{exercise} proper form tutorial")}',
+        'embed_url': youtube_embed_url(WORKOUT_EXERCISE_VIDEO_URLS[exercise]),
     }
     for exercise in WORKOUT_EXERCISES
 )
@@ -122,16 +176,37 @@ CARDIO_EXERCISE_DESCRIPTIONS = {
     'Jump Rope': 'Keep jumps low, elbows close to your sides, and turn the rope with your wrists.',
     'Outdoor Run': 'Start at an easy pace, land lightly, and choose a route that matches your current fitness level.',
 }
+CARDIO_EXERCISE_VIDEO_URLS = {
+    'Treadmill': 'https://www.youtube.com/watch?v=HxsFneJFM2c',
+    'Cycling': 'https://www.youtube.com/watch?v=fQqndzvURAU',
+    'Elliptical': 'https://www.youtube.com/watch?v=YWfswVvOaiI',
+    'Rowing': 'https://www.youtube.com/watch?v=6_eLpWiNijE',
+    'Stair Climber': 'https://www.youtube.com/watch?v=Zn1O9LcKW9E',
+    'Jump Rope': 'https://www.youtube.com/watch?v=53Da1uyST48',
+    'Outdoor Run': 'https://www.youtube.com/watch?v=_kGESn8ArrU',
+}
 CARDIO_EXERCISE_GUIDES = tuple(
     {
         'name': activity,
         'description': CARDIO_EXERCISE_DESCRIPTIONS[activity],
         'muscle_group': 'Cardio',
-        'video_url': f'https://www.youtube.com/results?search_query={quote_plus(f"{activity} cardio beginner form tutorial")}',
+        'embed_url': youtube_embed_url(CARDIO_EXERCISE_VIDEO_URLS[activity]),
     }
     for activity in CARDIO_ACTIVITIES
 )
 ALL_EXERCISE_GUIDES = WORKOUT_EXERCISE_GUIDES + CARDIO_EXERCISE_GUIDES
+DAILY_NUTRITION_TARGETS = {
+    'calories': Decimal('2000'),
+    'protein': Decimal('50'),
+    'carbs': Decimal('275'),
+    'fats': Decimal('78'),
+}
+DAILY_NUTRITION_LABELS = {
+    'calories': ('Calories', 'kcal'),
+    'protein': ('Protein', 'g'),
+    'carbs': ('Carbohydrates', 'g'),
+    'fats': ('Fat', 'g'),
+}
 EXERCISE_DIRECTORY_GROUPS = tuple(
     {
         'name': muscle_group,
@@ -165,6 +240,140 @@ def _gym_members(user=None):
     if user and is_trainer(user):
         members = members.filter(trainer_assignments__trainer=user)
     return members.order_by('username').distinct()
+
+
+def _calculate_daily_nutrition(user, day=None):
+    day = day or timezone.localdate()
+    aggregates = MealLog.objects.filter(member=user, date=day).aggregate(
+        **{f'{field}_total': Sum(field) for field in DAILY_NUTRITION_TARGETS}
+    )
+    totals = {
+        field: aggregates[f'{field}_total'] or Decimal('0')
+        for field in DAILY_NUTRITION_TARGETS
+    }
+    nutrients = []
+    for field, target in DAILY_NUTRITION_TARGETS.items():
+        label, unit = DAILY_NUTRITION_LABELS[field]
+        achievement = round((totals[field] / target) * 100) if target else 0
+        nutrients.append({
+            'label': label,
+            'total': totals[field],
+            'target': target,
+            'unit': unit,
+            'achievement': achievement,
+            'progress': min(achievement, 100),
+        })
+
+    calorie_gap = DAILY_NUTRITION_TARGETS['calories'] - totals['calories']
+    return {
+        'date': day,
+        'nutrients': nutrients,
+        'calorie_gap': abs(calorie_gap),
+        'calorie_gap_type': 'deficit' if calorie_gap > 0 else 'surplus' if calorie_gap < 0 else 'on_target',
+    }
+
+
+def analyze_weekly_coaching(user, day=None):
+    """Summarize the member's seven-day logged nutrition and weigh-in history."""
+    today = day or timezone.localdate()
+    start_date = today - timedelta(days=6)
+    daily_intakes = list(
+        MealLog.objects.filter(member=user, date__range=(start_date, today))
+        .values('date')
+        .annotate(
+            calories=Sum('calories'),
+            protein=Sum('protein'),
+            carbs=Sum('carbs'),
+            fats=Sum('fats'),
+        )
+        .order_by('date')
+    )
+    days_logged = len(daily_intakes)
+    averages = {
+        field: (
+            sum((entry[field] or Decimal('0') for entry in daily_intakes), Decimal('0'))
+            / days_logged
+            if days_logged
+            else Decimal('0')
+        )
+        for field in DAILY_NUTRITION_TARGETS
+    }
+    high_carb_days = sum(
+        1 for entry in daily_intakes
+        if (entry['carbs'] or Decimal('0')) > DAILY_NUTRITION_TARGETS['carbs']
+    )
+    weigh_ins = list(
+        WeightLog.objects.filter(member=user, date__range=(start_date, today))
+        .order_by('date', 'created_at')
+        .values('date', 'weight_kg')
+    )
+    weight_change = (
+        weigh_ins[-1]['weight_kg'] - weigh_ins[0]['weight_kg']
+        if len(weigh_ins) >= 2
+        else None
+    )
+    return {
+        'start_date': start_date,
+        'end_date': today,
+        'days_logged': days_logged,
+        'average_macros': averages,
+        'high_carb_days': high_carb_days,
+        'weigh_ins': weigh_ins,
+        'weight_change': weight_change,
+    }
+
+
+def generate_coaching_recommendations(analysis):
+    """Generate practical, privacy-preserving suggestions from weekly trends."""
+    recommendations = []
+    averages = analysis['average_macros']
+    days_logged = analysis['days_logged']
+
+    if not days_logged:
+        recommendations.append(
+            'Log meals with their macros this week to get nutrition suggestions based on your own patterns.'
+        )
+    else:
+        if analysis['high_carb_days']:
+            recommendations.append(
+                f"Carbs were above the daily reference on {analysis['high_carb_days']} "
+                f"of {days_logged} logged day(s). For dinner, try a protein-forward plate "
+                "such as chicken, fish, tofu, or beans with vegetables, and keep starch portions comfortable."
+            )
+        if averages['protein'] < DAILY_NUTRITION_TARGETS['protein']:
+            recommendations.append(
+                'Your logged protein average is below the reference. Add a protein source '
+                'to one meal, such as eggs, yogurt, lentils, tofu, fish, or chicken.'
+            )
+        if averages['calories'] > DAILY_NUTRITION_TARGETS['calories']:
+            recommendations.append(
+                'Logged calories averaged above the general reference. Review portions and '
+                'calorie-dense drinks or snacks; avoid drastic cuts and use a personalized target if available.'
+            )
+        elif averages['calories'] < DAILY_NUTRITION_TARGETS['calories'] * Decimal('0.75'):
+            recommendations.append(
+                'Logged calories averaged well below the general reference. Check that meal '
+                'entries are complete and that you are eating enough to support your activity.'
+            )
+        if not recommendations:
+            recommendations.append(
+                'Your logged intake is broadly within the general references. Keep recording meals '
+                'and aim for a varied mix of protein, produce, and energy-giving foods.'
+            )
+
+    weight_change = analysis['weight_change']
+    if weight_change is None:
+        recommendations.append(
+            'Record weigh-ins on a few different days to see a trend; a single reading cannot show a direction.'
+        )
+    elif abs(weight_change) >= Decimal('0.30'):
+        direction = 'up' if weight_change > 0 else 'down'
+        recommendations.append(
+            f"Your recorded weight is {abs(weight_change):.2f} kg {direction} across this week. "
+            'Daily weight can fluctuate; compare consistent morning readings over several weeks before adjusting your plan.'
+        )
+
+    return recommendations
 
 
 # --- Public / Authentication Views ---
@@ -219,6 +428,8 @@ def dashboard_view(request):
         workouts = WorkoutPlan.objects.filter(member__in=assigned_members)
         diets = DietPlan.objects.filter(member__in=assigned_members)
         attendances = Attendance.objects.filter(member__in=assigned_members)
+        assigned_member_count = assigned_members.count()
+        active_assigned_member_count = assigned_members.filter(is_active=True).count()
 
         members_list = assigned_members.order_by('-date_joined')
         search_query = request.GET.get('q', '')
@@ -241,6 +452,11 @@ def dashboard_view(request):
             'attendances': attendances,
             'payments': Payment.objects.none(),
             'members': members,
+            'assigned_member_count': assigned_member_count,
+            'active_assigned_member_count': active_assigned_member_count,
+            'workout_count': workouts.count(),
+            'diet_count': diets.count(),
+            'attendance_count': attendances.count(),
             'search_query': search_query,
             'status_filter': status_filter,
         }
@@ -258,15 +474,45 @@ def dashboard_view(request):
 
     # Fetch member payment history for profile tab
     payments = Payment.objects.filter(member=user).order_by('-created_at')
+    workout_split = WorkoutSplit.objects.filter(member=user).prefetch_related('days').first()
 
     context = {
         'role': role,
         'workouts': workouts,
+        'workout_split_title': workout_split.title if workout_split else None,
+        'workout_split_schedule': _workout_split_schedule(workout_split),
         'diets': diets,
         'attendances': attendances,
         'payments': payments,
+        'nutrition_summary': _calculate_daily_nutrition(user),
+        'coaching_analysis': analyze_weekly_coaching(user),
+        **_weight_tracking_context(user),
+        'weight_goal_return_to': 'dashboard',
+        'today': timezone.localdate().isoformat(),
     }
+    context['coaching_recommendations'] = generate_coaching_recommendations(
+        context['coaching_analysis']
+    )
     return render(request, 'fitness/dashboard.html', context)
+
+
+def _workout_split_schedule(split):
+    if not split:
+        return []
+
+    schedule = []
+    for day in split.days.all():
+        exercises = [
+            guide for guide in WORKOUT_EXERCISE_GUIDES
+            if guide['muscle_group'] in day.muscle_groups
+        ]
+        schedule.append({
+            'weekday': day.weekday,
+            'day_name': day.get_weekday_display(),
+            'muscle_groups': day.muscle_groups,
+            'exercises': exercises,
+        })
+    return schedule
 
 
 # --- BOSS REQUIREMENT: Mandatory Profile Completion View ---
@@ -503,6 +749,119 @@ def _member_daily_report_data(member, newest_first=True):
     }
 
 
+def _weight_chart_data(member, goal=None):
+    today = timezone.localdate()
+    start_date = today - timedelta(days=29)
+    if goal:
+        start_date = min(start_date, goal.start_date)
+    return [
+        {
+            'date': entry.date.isoformat(),
+            'weight_kg': float(entry.weight_kg),
+        }
+        for entry in WeightLog.objects.filter(
+            member=member,
+            date__range=(start_date, today),
+        ).order_by('date', 'created_at')
+    ]
+
+
+def _weight_tracking_context(member):
+    today = timezone.localdate()
+    goal = WeightGoal.objects.filter(member=member).first()
+    latest_weight = (
+        WeightLog.objects.filter(member=member, date__lte=today)
+        .order_by('-date', '-created_at')
+        .first()
+    )
+    goal_chart_data = None
+    goal_progress = None
+
+    if goal:
+        goal_chart_data = {
+            'start_date': goal.start_date.isoformat(),
+            'starting_weight_kg': float(goal.starting_weight_kg),
+            'target_date': goal.target_date.isoformat(),
+            'target_weight_kg': float(goal.target_weight_kg),
+        }
+
+        if latest_weight:
+            total_days = (goal.target_date - goal.start_date).days
+            elapsed_days = min(max((today - goal.start_date).days, 0), total_days)
+            weight_delta = goal.target_weight_kg - goal.starting_weight_kg
+            next_milestone_days = min(
+                (elapsed_days // 7 + 1) * 7,
+                total_days,
+            )
+            next_milestone_date = goal.start_date + timedelta(days=next_milestone_days)
+            next_milestone_weight = goal.starting_weight_kg + (
+                weight_delta * Decimal(next_milestone_days) / Decimal(total_days)
+            )
+            expected_weight = goal.starting_weight_kg + (
+                weight_delta * Decimal(elapsed_days) / Decimal(total_days)
+            )
+            progress = (
+                (latest_weight.weight_kg - goal.starting_weight_kg)
+                / weight_delta
+                * Decimal('100')
+            )
+            ahead_delta = (
+                expected_weight - latest_weight.weight_kg
+                if weight_delta < 0
+                else latest_weight.weight_kg - expected_weight
+            )
+            if ahead_delta > Decimal('0.05'):
+                pace_status = 'ahead of'
+            elif ahead_delta < Decimal('-0.05'):
+                pace_status = 'behind'
+            else:
+                pace_status = 'on'
+
+            goal_progress = {
+                'current_weight_kg': latest_weight.weight_kg,
+                'expected_weight_kg': expected_weight.quantize(Decimal('0.01')),
+                'remaining_kg': abs(goal.target_weight_kg - latest_weight.weight_kg).quantize(Decimal('0.01')),
+                'progress_percent': min(max(round(progress), 0), 100),
+                'weekly_pace_kg': (
+                    abs(weight_delta) * Decimal('7') / Decimal(total_days)
+                ).quantize(Decimal('0.01')),
+                'weight_direction': 'loss' if weight_delta < 0 else 'gain',
+                'next_milestone_date': next_milestone_date,
+                'next_milestone_weight_kg': next_milestone_weight.quantize(Decimal('0.01')),
+                'pace_status': pace_status,
+                'pace_difference_kg': abs(ahead_delta).quantize(Decimal('0.01')),
+            }
+
+    return {
+        'weight_goal': goal,
+        'weight_goal_chart_data': goal_chart_data,
+        'weight_goal_progress': goal_progress,
+        'weight_goal_latest_weight': latest_weight,
+        'weight_chart_data': _weight_chart_data(member, goal),
+        **_daily_intake_summary(member),
+        'default_weight_goal_date': (today + timedelta(days=90)).isoformat(),
+        'tomorrow': (today + timedelta(days=1)).isoformat(),
+    }
+
+
+def _daily_intake_summary(member):
+    today = timezone.localdate()
+    calories = MealLog.objects.filter(member=member, date=today).aggregate(
+        total=Sum('calories'),
+    )['total'] or Decimal('0')
+    water = WaterLog.objects.filter(member=member, date=today).values_list(
+        'liters',
+        flat=True,
+    ).first() or Decimal('0')
+    calorie_target = DAILY_NUTRITION_TARGETS['calories']
+    return {
+        'daily_calorie_total': calories,
+        'daily_calorie_target': calorie_target,
+        'daily_calorie_progress': min(round(calories / calorie_target * 100), 100),
+        'daily_water_liters': water,
+    }
+
+
 @user_passes_test(is_admin_or_trainer)
 def admin_member_detail_view(request, user_id):
     member = get_object_or_404(_gym_members(request.user), id=user_id)
@@ -517,10 +876,105 @@ def admin_member_detail_view(request, user_id):
         'workouts': workouts,
         'diets': diets,
         'role': 'Trainer' if is_trainer(request.user) else 'Admin',
+        'weight_chart_data': _weight_chart_data(member),
+        'today': timezone.localdate().isoformat(),
+        **_daily_intake_summary(member),
     }
     context.update(daily_report)
     return render(request, 'fitness/admin_member_detail.html', context)
 
+
+@login_required
+def weight_goal_view(request):
+    if request.method != 'POST':
+        return redirect('dashboard')
+    if is_admin_or_trainer(request.user):
+        messages.error(request, 'Weight goals are available from member accounts.')
+        return redirect('dashboard')
+    if not request.user.is_profile_complete:
+        return redirect('complete_profile')
+
+    redirect_to = (
+        'member_logging'
+        if request.POST.get('return_to') == 'member_logging'
+        else 'dashboard'
+    )
+    if request.POST.get('action') == 'clear':
+        WeightGoal.objects.filter(member=request.user).delete()
+        messages.success(request, 'Your weight goal has been removed.')
+        return redirect(redirect_to)
+
+    today = timezone.localdate()
+    starting_log = (
+        WeightLog.objects.filter(member=request.user, date__lte=today)
+        .order_by('-date', '-created_at')
+        .first()
+    )
+    if not starting_log:
+        messages.error(request, 'Log a weigh-in before setting a weight goal.')
+        return redirect(redirect_to)
+
+    try:
+        target_weight = WeightGoal._meta.get_field('target_weight_kg').clean(
+            request.POST.get('target_weight_kg', ''),
+            None,
+        )
+    except ValidationError:
+        messages.error(request, 'Enter a valid target weight greater than zero.')
+        return redirect(redirect_to)
+
+    target_date = _parse_log_date(request.POST.get('target_date'))
+    if not target_date or target_date <= today:
+        messages.error(request, 'Choose a target date in the future.')
+        return redirect(redirect_to)
+
+    goal = WeightGoal.objects.filter(member=request.user).first()
+    if goal is None:
+        goal = WeightGoal(member=request.user)
+    goal.starting_weight_kg = starting_log.weight_kg
+    goal.target_weight_kg = target_weight
+    goal.start_date = starting_log.date
+    goal.target_date = target_date
+    try:
+        goal.full_clean()
+    except ValidationError as error:
+        for field_errors in error.message_dict.values():
+            for message in field_errors:
+                messages.error(request, message)
+        return redirect(redirect_to)
+    goal.save()
+    messages.success(request, 'Your weight goal and weekly milestones have been updated.')
+    return redirect(redirect_to)
+
+
+@login_required
+def weight_log_view(request):
+    if request.method != 'POST':
+        return redirect('dashboard')
+    if is_admin_or_trainer(request.user):
+        messages.error(request, 'Weight check-ins are available from member accounts.')
+        return redirect('dashboard')
+
+    log_date = _parse_log_date(request.POST.get('log_date'))
+    if not log_date:
+        messages.error(request, 'Choose a valid date for your weigh-in.')
+        return redirect('dashboard')
+    try:
+        weight_kg = WeightLog._meta.get_field('weight_kg').clean(
+            request.POST.get('weight_kg', ''),
+            None,
+        )
+    except ValidationError:
+        messages.error(request, 'Enter a valid weight greater than zero.')
+        return redirect('dashboard')
+
+    WeightLog.objects.update_or_create(
+        member=request.user,
+        date=log_date,
+        defaults={'weight_kg': weight_kg},
+    )
+    messages.success(request, 'Your weigh-in has been saved.')
+    return redirect('dashboard')
 
 @login_required
 @user_passes_test(is_admin_or_trainer)
@@ -751,6 +1205,93 @@ def _parse_log_date(value):
 
 
 @login_required
+def workout_split_builder_view(request):
+    user = request.user
+    if is_admin_or_trainer(user):
+        return redirect('dashboard')
+    if not user.is_profile_complete:
+        return redirect('complete_profile')
+
+    split = WorkoutSplit.objects.filter(member=user).prefetch_related('days').first()
+    error = None
+    title = split.title if split else 'My weekly split'
+
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        raw_split = request.POST.get('split_data', '')
+        try:
+            submitted_days = json.loads(raw_split)
+        except (TypeError, ValueError):
+            submitted_days = None
+
+        valid_groups = {value for value, _ in WorkoutSplitDay.MUSCLE_GROUP_CHOICES}
+        validated_days = {}
+        if not title or len(title) > 100:
+            error = 'Enter a split name of 1 to 100 characters.'
+        elif not isinstance(submitted_days, dict):
+            error = 'Choose at least one training day and muscle target.'
+        else:
+            for raw_weekday, groups in submitted_days.items():
+                try:
+                    weekday = int(raw_weekday)
+                except (TypeError, ValueError):
+                    error = 'One or more selected days is invalid.'
+                    break
+                if (
+                    weekday not in dict(WorkoutSplitDay.WEEKDAY_CHOICES)
+                    or str(weekday) != raw_weekday
+                    or weekday in validated_days
+                    or not isinstance(groups, list)
+                    or not groups
+                    or any(not isinstance(group, str) for group in groups)
+                    or len(groups) != len(set(groups))
+                    or not set(groups).issubset(valid_groups)
+                ):
+                    error = 'Each scheduled day needs valid, non-duplicate muscle targets.'
+                    break
+                validated_days[weekday] = groups
+            if not error and not validated_days:
+                error = 'Choose at least one training day and muscle target.'
+
+        if not error:
+            with transaction.atomic():
+                split, _ = WorkoutSplit.objects.get_or_create(
+                    member=user,
+                    defaults={'title': title},
+                )
+                if split.title != title:
+                    split.title = title
+                    split.save(update_fields=['title', 'updated_at'])
+                split.days.exclude(weekday__in=validated_days).delete()
+                for weekday, groups in validated_days.items():
+                    day, _ = WorkoutSplitDay.objects.update_or_create(
+                        split=split,
+                        weekday=weekday,
+                        defaults={'muscle_groups': groups},
+                    )
+                    day.full_clean()
+                    day.save(update_fields=['muscle_groups'])
+            messages.success(request, 'Your weekly workout split has been saved.')
+            return redirect('dashboard')
+
+    split = WorkoutSplit.objects.filter(member=user).prefetch_related('days').first()
+    split_data = {
+        str(day.weekday): day.muscle_groups
+        for day in split.days.all()
+    } if split else {}
+    return render(request, 'fitness/workout_split.html', {
+        'role': 'Member',
+        'split_title': title,
+        'split_data': split_data,
+        'workout_split_schedule': _workout_split_schedule(split),
+        'muscle_groups': WorkoutSplitDay.MUSCLE_GROUP_CHOICES,
+        'weekday_choices': WorkoutSplitDay.WEEKDAY_CHOICES,
+        'exercise_guides': WORKOUT_EXERCISE_GUIDES,
+        'split_error': error,
+    })
+
+
+@login_required
 def member_logging_view(request):
     user = request.user
     
@@ -775,12 +1316,64 @@ def member_logging_view(request):
                 messages.error(request, 'Choose a meal type and enter a meal description.')
                 return redirect('member_logging')
 
+            try:
+                nutrients = {
+                    field: MealLog._meta.get_field(field).clean(request.POST.get(field) or '0', None)
+                    for field in DAILY_NUTRITION_TARGETS
+                }
+            except ValidationError:
+                messages.error(request, 'Enter valid non-negative values for calories and macros.')
+                return redirect('member_logging')
+
             MealLog.objects.create(
                 member=user,
                 date=log_date,
                 meal_type=meal_type,
                 description=description,
+                **nutrients,
                 receipt_image=receipt_image,
+            )
+            return redirect('member_logging')
+
+        if log_type == 'weight':
+            notes = request.POST.get('notes', '').strip()
+            if len(notes) > 2000:
+                messages.error(request, 'Keep weigh-in notes under 2,000 characters.')
+                return redirect('member_logging')
+            try:
+                weight_kg = WeightLog._meta.get_field('weight_kg').clean(
+                    request.POST.get('weight_kg', ''),
+                    None,
+                )
+            except ValidationError:
+                messages.error(request, 'Enter a valid weight greater than zero.')
+                return redirect('member_logging')
+
+            WeightLog.objects.update_or_create(
+                member=user,
+                date=log_date,
+                defaults={'weight_kg': weight_kg, 'notes': notes},
+            )
+            return redirect('member_logging')
+
+        if log_type == 'water':
+            notes = request.POST.get('notes', '').strip()
+            if len(notes) > 2000:
+                messages.error(request, 'Keep water intake notes under 2,000 characters.')
+                return redirect('member_logging')
+            try:
+                liters = WaterLog._meta.get_field('liters').clean(
+                    request.POST.get('liters', ''),
+                    None,
+                )
+            except ValidationError:
+                messages.error(request, 'Enter a valid daily water intake between 0.01 and 99.99 liters.')
+                return redirect('member_logging')
+
+            WaterLog.objects.update_or_create(
+                member=user,
+                date=log_date,
+                defaults={'liters': liters, 'notes': notes},
             )
             return redirect('member_logging')
 
@@ -791,6 +1384,10 @@ def member_logging_view(request):
                 return redirect('member_logging')
 
             did_workout = did_workout_val == 'yes'
+            notes = request.POST.get('notes', '').strip()
+            if len(notes) > 2000:
+                messages.error(request, 'Keep workout notes under 2,000 characters.')
+                return redirect('member_logging')
             muscle_split = request.POST.get('muscle_split') or None
             exercise_entries = []
             if did_workout:
@@ -837,6 +1434,7 @@ def member_logging_view(request):
                     did_workout=did_workout,
                     muscle_split=muscle_split,
                     exercise_details=exercise_details,
+                    notes=notes,
                 )
                 WorkoutExerciseLog.objects.bulk_create([
                     WorkoutExerciseLog(workout=workout_log, **entry)
@@ -859,8 +1457,8 @@ def member_logging_view(request):
             if not 1 <= duration_minutes <= 300:
                 messages.error(request, 'Enter a cardio duration between 1 and 300 minutes.')
                 return redirect('member_logging')
-            if len(notes) > 250:
-                messages.error(request, 'Keep cardio notes under 250 characters.')
+            if len(notes) > 2000:
+                messages.error(request, 'Keep cardio notes under 2,000 characters.')
                 return redirect('member_logging')
 
             CardioLog.objects.create(
@@ -876,11 +1474,17 @@ def member_logging_view(request):
     meal_logs = MealLog.objects.filter(member=user).order_by('-date', '-created_at')
     workout_logs = WorkoutLog.objects.filter(member=user).prefetch_related('exercises').order_by('-date', '-created_at')
     cardio_logs = CardioLog.objects.filter(member=user).order_by('-date', '-created_at')
+    weight_logs = WeightLog.objects.filter(member=user)[:7]
+    water_logs = WaterLog.objects.filter(member=user)[:7]
 
     context = {
         'meal_logs': meal_logs,
         'workout_logs': workout_logs,
         'cardio_logs': cardio_logs,
+        'weight_logs': weight_logs,
+        'water_logs': water_logs,
+        **_weight_tracking_context(user),
+        'weight_goal_return_to': 'member_logging',
         'role': 'Member',
         'today': timezone.localdate().isoformat(),
         'meal_types': MealLog.MEAL_TYPE_CHOICES,
@@ -920,10 +1524,9 @@ def _format_workout_response(response_text):
             if guide['name'].casefold() in normalized_item
         ]
         if matching_guides:
-            return max(matching_guides, key=lambda guide: len(guide['name']))['video_url']
+            return max(matching_guides, key=lambda guide: len(guide['name']))['embed_url']
 
-        exercise_name = re.split(r"\s*(?:—|–|:|\s-\s)\s*", clean_markdown(item), maxsplit=1)[0]
-        return f'https://www.youtube.com/results?search_query={quote_plus(f"{exercise_name} proper form tutorial")}'
+        return None
 
     lines = []
     for raw_line in response_text.splitlines():
@@ -969,14 +1572,24 @@ def _format_workout_response(response_text):
 
         def flush_list():
             if list_items:
-                items = "".join(
-                    f'<li class="grid min-w-0 grid-cols-1 gap-3 rounded-lg border border-[#E7E3D6] bg-[#FCFBF8] p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">'
-                    f'<span class="min-w-0 break-words text-sm leading-relaxed text-[#4B5750]">{format_inline(item)}</span>'
-                    f'<a href="{exercise_video_url(item)}" target="_blank" rel="noopener noreferrer" '
-                    f'class="inline-flex min-h-9 w-fit max-w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#1F4D3A] px-3 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-[#173c2d]">'
-                    f'<i class="fa-brands fa-youtube" aria-hidden="true"></i> Watch video tutorial</a></li>'
-                    for item in list_items
-                )
+                rendered_items = []
+                for item in list_items:
+                    embed_url = exercise_video_url(item)
+                    video_html = (
+                        f'<iframe class="w-full aspect-video rounded-xl shadow-md" '
+                        f'src="{embed_url}" title="{escape_html(clean_markdown(item))} video demonstration" '
+                        f'loading="lazy" referrerpolicy="strict-origin-when-cross-origin" '
+                        f'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" '
+                        f'allowfullscreen></iframe>'
+                        if embed_url
+                        else '<p class="text-[11px] text-[#6B7568]">No embeddable video reference is available for this exercise yet.</p>'
+                    )
+                    rendered_items.append(
+                        f'<li class="min-w-0 space-y-3 rounded-lg border border-[#E7E3D6] bg-[#FCFBF8] p-3">'
+                        f'<span class="block min-w-0 break-words text-sm leading-relaxed text-[#4B5750]">{format_inline(item)}</span>'
+                        f'{video_html}</li>'
+                    )
+                items = ''.join(rendered_items)
                 output.append(f'<ul class="min-w-0 space-y-2">{items}</ul>')
                 list_items.clear()
 

@@ -13,8 +13,9 @@
         .font-display { font-family: 'Space Grotesk', sans-serif; }
         a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid #1F4D3A; outline-offset: 2px; }
     </style>
+    {% include 'fitness/partials/premium_ui_styles.html' %}
 </head>
-<body class="min-h-screen bg-[#F4F2EA] text-[#1B241E] antialiased pb-24 md:pb-0 md:pl-64">
+<body class="ui-premium min-h-screen bg-[#F4F2EA] text-[#1B241E] antialiased pb-24 md:pb-0 md:pl-64">
     {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
 
     <main class="mx-auto max-w-[1600px] space-y-6 px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
@@ -28,6 +29,8 @@
                 <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Admin workspace
             </div>
         </header>
+
+        {% include 'fitness/partials/quick_navigation_cards.html' %}
 
         {% if messages %}
             <div class="space-y-2" aria-live="polite">
@@ -84,7 +87,7 @@
                     {% endfor %}
                 </div>
 
-                <details class="group border-t border-[#DCD8CB] pt-4" open>
+                <details id="create-trainer" class="group border-t border-[#DCD8CB] pt-4" open>
                     <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl bg-[#FCFBF8] px-4 py-3.5">
                         <span class="flex items-center gap-2.5">
                             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3EBD5] text-[#9A7A3F]"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span>

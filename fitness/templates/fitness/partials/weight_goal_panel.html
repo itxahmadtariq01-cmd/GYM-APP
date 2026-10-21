@@ -1,0 +1,160 @@
+<section class="mt-5 rounded-2xl border border-[#E1E8EF] bg-white p-5 shadow-sm sm:p-6" aria-labelledby="weight-goal-title">
+
+    {# ---------- Header ---------- #}
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <h3 id="weight-goal-title" class="font-display text-xl font-semibold text-[#0F1B2D]">
+                {% if weight_goal %}Your weight goal{% else %}Set a weight goal{% endif %}
+            </h3>
+            <p class="mt-1 max-w-prose text-sm text-[#52627A]">
+                {% if weight_goal %}
+                    {{ weight_goal.starting_weight_kg|floatformat:"-2" }} kg on {{ weight_goal.start_date|date:"M j, Y" }}
+                    to {{ weight_goal.target_weight_kg|floatformat:"-2" }} kg by {{ weight_goal.target_date|date:"M j, Y" }}
+                    ({{ weight_goal.target_date|timeuntil }} left).
+                {% else %}
+                    Pick a target weight and date. We'll build weekly milestones from your latest weigh-in.
+                {% endif %}
+            </p>
+        </div>
+
+        {% if weight_goal_progress %}
+        <span class="shrink-0 self-start rounded-full bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800">
+            {{ weight_goal_progress.progress_percent }}% complete
+        </span>
+        {% endif %}
+    </div>
+
+    {% if weight_goal_progress %}
+
+    {# ---------- Main progress: remaining weight + track ---------- #}
+    <div class="mt-6" role="group" aria-label="Weight goal progress">
+        <div class="flex items-end justify-between gap-4">
+            <p class="font-display text-4xl font-semibold leading-none text-[#0F1B2D]">
+                {{ weight_goal_progress.remaining_kg|floatformat:"-2" }}
+                <span class="text-lg font-medium text-[#52627A]">kg to go</span>
+            </p>
+            <p class="text-right text-xs text-[#52627A]">
+                Latest check-in<br>
+                <span class="text-sm font-bold text-[#0F1B2D]">{{ weight_goal_progress.current_weight_kg|floatformat:"-2" }} kg</span>
+            </p>
+        </div>
+
+        <div class="relative mt-4 pb-1">
+            <div class="h-3 overflow-hidden rounded-full bg-slate-100"
+                 role="progressbar"
+                 aria-label="Progress toward target weight"
+                 aria-valuenow="{{ weight_goal_progress.progress_percent }}"
+                 aria-valuemin="0"
+                 aria-valuemax="100"
+                 aria-valuetext="{{ weight_goal_progress.progress_percent }}% complete, {{ weight_goal_progress.remaining_kg|floatformat:'-2' }} kilograms to go">
+                <div class="h-full max-w-full rounded-full bg-gradient-to-r from-teal-500 to-cyan-600 transition-[width] duration-500 motion-reduce:transition-none"
+                     style="width:{{ weight_goal_progress.progress_percent }}%"></div>
+            </div>
+            {# Marker for where you are now #}
+            <span class="pointer-events-none absolute top-[-3px] h-[18px] w-[18px] -translate-x-1/2 rounded-full border-[3px] border-white bg-teal-700 shadow"
+                  style="left:min({{ weight_goal_progress.progress_percent }}%, 100%)" aria-hidden="true"></span>
+        </div>
+
+        <div class="mt-2 flex justify-between text-xs font-semibold text-[#52627A]">
+            <span>Start {{ weight_goal.starting_weight_kg|floatformat:"-2" }} kg</span>
+            <span>Target {{ weight_goal.target_weight_kg|floatformat:"-2" }} kg</span>
+        </div>
+    </div>
+
+    {# ---------- Pace + next milestone ---------- #}
+    <dl class="mt-6 grid grid-cols-1 gap-x-6 gap-y-4 border-t border-[#E1E8EF] pt-5 sm:grid-cols-2">
+        <div>
+            <dt class="text-xs font-semibold text-[#52627A]">Pace</dt>
+            <dd class="mt-1">
+                {% if weight_goal_progress.pace_status == 'ahead of' %}
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-sm font-bold text-emerald-800">
+                        <i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i>
+                        {{ weight_goal_progress.pace_difference_kg|floatformat:"-2" }} kg ahead
+                    </span>
+                {% elif weight_goal_progress.pace_status == 'behind' %}
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-sm font-bold text-amber-900">
+                        <i class="fa-solid fa-arrow-trend-down" aria-hidden="true"></i>
+                        {{ weight_goal_progress.pace_difference_kg|floatformat:"-2" }} kg behind
+                    </span>
+                {% else %}
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-sm font-bold text-teal-800">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        On track
+                    </span>
+                {% endif %}
+                <span class="ml-1 text-xs text-[#52627A]">vs. your planned curve</span>
+            </dd>
+        </div>
+
+        <div>
+            <dt class="text-xs font-semibold text-[#52627A]">Next milestone</dt>
+            <dd class="mt-1 text-sm text-[#0F1B2D]">
+                <span class="font-display text-xl font-semibold">{{ weight_goal_progress.next_milestone_weight_kg|floatformat:"-2" }} kg</span>
+                by {{ weight_goal_progress.next_milestone_date|date:"M j, Y" }}
+            </dd>
+        </div>
+
+        <div class="sm:col-span-2">
+            <dt class="text-xs font-semibold text-[#52627A]">Planned weekly {{ weight_goal_progress.weight_direction }}</dt>
+            <dd class="mt-1 text-sm font-bold text-[#0F1B2D]">{{ weight_goal_progress.weekly_pace_kg|floatformat:"-2" }} kg per week</dd>
+        </div>
+    </dl>
+
+    <p class="mt-4 text-xs text-[#52627A]">
+        The curve is a planning reference, not a personalized health prescription.
+    </p>
+
+    {% elif not weight_goal_latest_weight %}
+    <p class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+        <i class="fa-solid fa-scale-balanced mr-1.5" aria-hidden="true"></i>
+        Record a weigh-in first. Your goal starts from that weight.
+    </p>
+    {% endif %}
+
+    {# ---------- Goal form (collapsed once a goal exists) ---------- #}
+    <details class="group mt-5 border-t border-[#E1E8EF] pt-4" {% if not weight_goal %}open{% endif %}>
+        {% if weight_goal %}
+        <summary class="flex cursor-pointer list-none items-center justify-between rounded-lg py-1 text-sm font-bold text-teal-800 outline-none focus-visible:ring-2 focus-visible:ring-teal-200 [&::-webkit-details-marker]:hidden">
+            Edit goal
+            <i class="fa-solid fa-chevron-down text-xs transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true"></i>
+        </summary>
+        {% endif %}
+
+        <form method="post" action="{% url 'weight_goal' %}" class="mt-4 grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
+            {% csrf_token %}
+            <input type="hidden" name="return_to" value="{{ weight_goal_return_to }}">
+
+            <div>
+                <label for="weight-goal-target-{{ weight_goal_return_to }}" class="mb-1.5 block text-xs font-bold text-[#33445C]">Target weight (kg)</label>
+                <input id="weight-goal-target-{{ weight_goal_return_to }}" type="number" inputmode="decimal" name="target_weight_kg"
+                       min="0.01" max="9999.99" step="0.01"
+                       value="{% if weight_goal %}{{ weight_goal.target_weight_kg }}{% endif %}"
+                       required
+                       class="w-full rounded-xl border border-[#D8E1EA] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#0F1B2D] outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100">
+            </div>
+
+            <div>
+                <label for="weight-goal-date-{{ weight_goal_return_to }}" class="mb-1.5 block text-xs font-bold text-[#33445C]">Target date</label>
+                <input id="weight-goal-date-{{ weight_goal_return_to }}" type="date" name="target_date"
+                       min="{{ tomorrow }}"
+                       value="{% if weight_goal %}{{ weight_goal.target_date|date:'Y-m-d' }}{% else %}{{ default_weight_goal_date }}{% endif %}"
+                       required
+                       class="w-full rounded-xl border border-[#D8E1EA] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#0F1B2D] outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100">
+            </div>
+
+            <button type="submit" {% if not weight_goal_latest_weight %}disabled{% endif %}
+                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-700 px-4 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-teal-900/15 outline-none transition hover:shadow-teal-900/25 focus-visible:ring-2 focus-visible:ring-teal-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none">
+                <i class="fa-solid fa-bullseye" aria-hidden="true"></i>
+                {% if weight_goal %}Save changes{% else %}Set goal{% endif %}
+            </button>
+
+            {% if weight_goal %}
+            <button type="submit" name="action" value="clear" formnovalidate
+                    onclick="return confirm('Remove your current weight goal? Your weigh-ins are kept.')"
+                    class="justify-self-start rounded text-xs font-semibold text-rose-700 underline underline-offset-2 outline-none hover:text-rose-900 focus-visible:ring-2 focus-visible:ring-rose-200 sm:col-span-3">
+                Remove goal
+            </button>
+            {% endif %}
+        </form>
+    </details>
+</section>

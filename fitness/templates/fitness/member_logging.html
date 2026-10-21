@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">`
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Tracking &amp; Logging Suite — Caliber Labs</title>
     <!-- Tailwind CSS CDN -->
@@ -11,9 +11,18 @@
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .font-display { font-family: 'Space Grotesk', sans-serif; }
+        html { scroll-behavior: smooth; }
+        .tracker-tab { display:flex; min-height:5.5rem; align-items:flex-start; gap:12px; border:1px solid #E7E3D6;
+            border-radius:16px; background:#fff; padding:14px; color:#52627A; font-size:12px; font-weight:700;
+            box-shadow:0 1px 2px rgba(20,35,28,.04); transition:transform .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease; }
+        .tracker-tab:hover, .tracker-tab[aria-current="location"] { transform:translateY(-2px); border-color:#A7D8D1; background:#EAF8F5; color:#0F766E; box-shadow:0 8px 18px -12px rgba(15,118,110,.5); }
+        .tracker-tab:focus-visible { outline:2px solid #0F766E; outline-offset:2px; }
+        [id^="member-"][id$="-section"] { scroll-margin-top:1rem; }
+        @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
     </style>
+    {% include 'fitness/partials/premium_ui_styles.html' %}
 </head>
-<body class="bg-[#F4F2EA] min-h-screen text-[#1B241E] antialiased flex flex-col pb-20 md:pl-64 md:pb-0">
+<body class="ui-premium bg-[#F4F2EA] min-h-screen text-[#1B241E] antialiased flex flex-col pb-20 md:pl-64 md:pb-0">
     {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
     <header class="min-h-20 bg-white border-b border-[#E7E3D6] px-4 sm:px-8 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3 min-w-0">
@@ -31,16 +40,18 @@
     </header>
 
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-5">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div id="member-daily-log-section" class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
             <div>
                 <p class="text-[10px] font-bold uppercase tracking-wide text-[#9A7A3F]">Member journal</p>
                 <h1 class="font-display text-2xl font-bold text-[#14231C] mt-1">Daily Tracking</h1>
-                <p class="text-xs text-[#6B7568] mt-1">Record meals, strength sessions, and cardio in one place.</p>
+                <p class="text-xs text-[#6B7568] mt-1">Log meals, strength training, and cardio in one place.</p>
             </div>
             <span class="inline-flex items-center gap-2 w-fit rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-[#1F4D3A]">
                 <i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ today|date:"M j, Y" }}
             </span>
         </div>
+
+        {% include 'fitness/partials/quick_navigation_cards.html' %}
 
         {% if messages %}
             <div class="space-y-2" aria-live="polite">
@@ -54,12 +65,12 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6 items-stretch">
             <!-- Meal log -->
-            <section class="order-1 h-full bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
+            <section id="member-meal-section" class="order-1 h-full bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
                     <div class="flex items-center gap-3">
                         <span class="w-11 h-11 rounded-2xl bg-amber-50 text-[#9A7A3F] flex items-center justify-center shrink-0"><i class="fa-solid fa-utensils" aria-hidden="true"></i></span>
                         <div>
-                            <h2 class="font-display text-lg font-bold text-[#14231C]">Upload Meal Log</h2>
-                            <p class="text-[11px] text-[#6B7568] mt-0.5">Track food and meal photos.</p>
+                            <h2 class="font-display text-lg font-bold text-[#14231C]">Log a meal</h2>
+                            <p class="text-[11px] text-[#6B7568] mt-0.5">Record meal details and nutrition information.</p>
                         </div>
                     </div>
 
@@ -79,8 +90,32 @@
                             </div>
                         </div>
                         <div>
-                            <label for="meal-description" class="block font-semibold text-[#14231C] mb-1.5">Food and nutrition notes</label>
+                            <div class="mb-1.5 flex items-center justify-between gap-2">
+                                <label for="meal-description" class="block font-semibold text-[#14231C]">Food and nutrition notes</label>
+                                <button type="button" data-voice-target="meal-description" data-voice-status="meal-voice-status" class="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E7DD] bg-emerald-50 px-2.5 py-1.5 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">
+                                    <i class="fa-solid fa-microphone" aria-hidden="true"></i><span>Dictate</span>
+                                </button>
+                            </div>
                             <textarea id="meal-description" name="description" rows="3" required class="w-full resize-y bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]"></textarea>
+                            <p id="meal-voice-status" class="mt-1 text-[10px] text-[#6B7568]" aria-live="polite">Dictation uses your browser's speech recognition and requires microphone permission.</p>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div>
+                                <label for="meal-calories" class="block font-semibold text-[#14231C] mb-1.5">Calories (kcal)</label>
+                                <input id="meal-calories" type="number" name="calories" min="0" max="999999.99" step="0.01" value="0" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            </div>
+                            <div>
+                                <label for="meal-protein" class="block font-semibold text-[#14231C] mb-1.5">Protein (g)</label>
+                                <input id="meal-protein" type="number" name="protein" min="0" max="999999.99" step="0.01" value="0" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            </div>
+                            <div>
+                                <label for="meal-carbs" class="block font-semibold text-[#14231C] mb-1.5">Carbs (g)</label>
+                                <input id="meal-carbs" type="number" name="carbs" min="0" max="999999.99" step="0.01" value="0" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            </div>
+                            <div>
+                                <label for="meal-fats" class="block font-semibold text-[#14231C] mb-1.5">Fat (g)</label>
+                                <input id="meal-fats" type="number" name="fats" min="0" max="999999.99" step="0.01" value="0" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            </div>
                         </div>
                         <div>
                             <label for="meal-photo" class="block font-semibold text-[#14231C] mb-1.5">Meal photo <span class="font-normal text-[#8B8577]">(optional)</span></label>
@@ -98,16 +133,55 @@
                                 <article class="p-3 bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl flex items-center justify-between gap-3">
                                     <div class="flex items-center gap-3 min-w-0">
                                         {% if meal.receipt_image %}<a href="{{ meal.receipt_image.url }}" target="_blank" rel="noopener" aria-label="Open meal image"><img src="{{ meal.receipt_image.url }}" alt="Meal log" class="w-10 h-10 rounded-lg object-cover border border-[#E7E3D6] shrink-0"></a>{% endif %}
-                                        <div class="min-w-0"><p class="font-semibold text-[#14231C]">{{ meal.meal_type }} <span class="font-normal text-[#6B7568]">· {{ meal.date|date:"M j, Y" }}</span></p><p class="text-[11px] text-[#6B7568] mt-0.5 break-words">{{ meal.description }}</p></div>
+                                        <div class="min-w-0"><p class="font-semibold text-[#14231C]">{{ meal.meal_type }} <span class="font-normal text-[#6B7568]">· {{ meal.date|date:"M j, Y" }}</span></p><p class="text-[11px] text-[#6B7568] mt-0.5 break-words">{{ meal.description }}</p><p class="text-[10px] text-[#6B7568] mt-1">{{ meal.calories|floatformat:"-2" }} kcal · P {{ meal.protein|floatformat:"-2" }}g · C {{ meal.carbs|floatformat:"-2" }}g · F {{ meal.fats|floatformat:"-2" }}g</p></div>
                                     </div>
                                 </article>
                             {% empty %}<p class="text-[11px] text-[#8B8577] italic">No meal logs recorded yet.</p>{% endfor %}
                         </div>
                     </div>
+
+                    <div id="member-water-section" class="border-t border-[#E7E3D6] pt-4 space-y-3">
+                        <div>
+                            <h3 class="font-display font-bold text-sm text-[#14231C]">Daily water intake</h3>
+                            <p class="mt-0.5 text-[10px] text-[#6B7568]">Enter your total for the selected date; saving again updates that day's amount.</p>
+                        </div>
+                        <form method="POST" class="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2 sm:items-end">
+                            {% csrf_token %}
+                            <input type="hidden" name="log_type" value="water">
+                            <div>
+                                <label for="water-date" class="mb-1.5 block font-semibold text-[#14231C]">Date</label>
+                                <input id="water-date" type="date" name="log_date" value="{{ today }}" required class="w-full rounded-xl border border-[#E7E3D6] bg-[#F9F8F3] px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            </div>
+                            <div>
+                                <label for="water-liters" class="mb-1.5 block font-semibold text-[#14231C]">Total water (L)</label>
+                                <input id="water-liters" type="number" name="liters" min="0.01" max="99.99" step="0.01" value="{% if daily_water_liters %}{{ daily_water_liters }}{% endif %}" required class="w-full rounded-xl border border-[#E7E3D6] bg-[#F9F8F3] px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <div class="mb-1.5 flex items-center justify-between gap-2">
+                                    <label for="water-notes" class="block font-semibold text-[#14231C]">Notes <span class="font-normal text-[#8B8577]">(optional)</span></label>
+                                    <button type="button" data-voice-target="water-notes" data-voice-status="water-voice-status" class="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E7DD] bg-emerald-50 px-2.5 py-1.5 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">
+                                        <i class="fa-solid fa-microphone" aria-hidden="true"></i><span>Dictate</span>
+                                    </button>
+                                </div>
+                                <textarea id="water-notes" name="notes" maxlength="2000" rows="2" class="w-full resize-y rounded-xl border border-[#E7E3D6] bg-[#F9F8F3] px-3 py-2.5 outline-none focus:border-[#1F4D3A]"></textarea>
+                                <p id="water-voice-status" class="mt-1 text-[10px] text-[#6B7568]" aria-live="polite">Dictation uses your browser's speech recognition and requires microphone permission.</p>
+                            </div>
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F4D3A] px-4 py-2.5 font-semibold text-white hover:bg-[#173c2d] sm:col-span-2"><i class="fa-solid fa-glass-water" aria-hidden="true"></i> Save intake</button>
+                        </form>
+                        {% if water_logs %}
+                        <ul class="flex flex-wrap gap-2">
+                            {% for water_log in water_logs %}
+                            <li class="rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-[11px] text-[#315B45]">
+                                <time datetime="{{ water_log.date|date:'Y-m-d' }}">{{ water_log.date|date:"M j" }}</time> · {{ water_log.liters|floatformat:"-2" }} L{% if water_log.notes %}<span class="block mt-1">{{ water_log.notes }}</span>{% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
                 </section>
 
                 <!-- Cardio log -->
-                <section class="order-3 md:col-span-2 grid grid-cols-1 xl:grid-cols-2 xl:gap-x-8 gap-y-5 bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-6 shadow-sm">
+                <section id="member-cardio-section" class="order-3 md:col-span-2 grid grid-cols-1 xl:grid-cols-2 xl:gap-x-8 gap-y-5 bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-6 shadow-sm">
                     <div class="flex items-center gap-3 xl:col-span-2">
                         <span class="w-11 h-11 rounded-2xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i></span>
                         <div>
@@ -144,8 +218,14 @@
                             </div>
                         </div>
                         <div>
-                            <label for="cardio-notes" class="block font-semibold text-[#14231C] mb-1.5">Notes <span class="font-normal text-[#8B8577]">(optional)</span></label>
-                            <input id="cardio-notes" type="text" name="notes" maxlength="250" class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            <div class="mb-1.5 flex items-center justify-between gap-2">
+                                <label for="cardio-notes" class="block font-semibold text-[#14231C]">Notes <span class="font-normal text-[#8B8577]">(optional)</span></label>
+                                <button type="button" data-voice-target="cardio-notes" data-voice-status="cardio-voice-status" class="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E7DD] bg-emerald-50 px-2.5 py-1.5 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">
+                                    <i class="fa-solid fa-microphone" aria-hidden="true"></i><span>Dictate</span>
+                                </button>
+                            </div>
+                            <textarea id="cardio-notes" name="notes" maxlength="2000" rows="2" class="w-full resize-y bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]"></textarea>
+                            <p id="cardio-voice-status" class="mt-1 text-[10px] text-[#6B7568]" aria-live="polite">Dictation uses your browser's speech recognition and requires microphone permission.</p>
                         </div>
                         <button type="submit" class="w-full inline-flex items-center justify-center gap-2 bg-[#1F4D3A] text-white font-semibold py-3 rounded-xl shadow-sm hover:bg-[#173c2d] transition-colors">
                             <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save cardio session
@@ -165,8 +245,62 @@
                     </div>
                 </section>
 
+                <section id="member-weight-section" class="order-4 md:col-span-2 grid grid-cols-1 xl:grid-cols-2 xl:gap-x-8 gap-y-5 bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-6 shadow-sm">
+                    <div class="flex items-center gap-3 xl:col-span-2">
+                        <span class="w-11 h-11 rounded-2xl bg-violet-50 text-violet-700 flex items-center justify-center shrink-0"><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i></span>
+                        <div>
+                            <h2 class="font-display text-lg font-bold text-[#14231C]">Weight Check-in</h2>
+                            <p class="text-[11px] text-[#6B7568] mt-0.5">Use consistent conditions to make weekly trends more useful.</p>
+                        </div>
+                    </div>
+                    <form method="POST" class="space-y-3 text-xs">
+                        {% csrf_token %}
+                        <input type="hidden" name="log_type" value="weight">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label for="weight-date" class="block font-semibold text-[#14231C] mb-1.5">Check-in date</label>
+                                <input id="weight-date" type="date" name="log_date" value="{{ today }}" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            </div>
+                            <div>
+                                <label for="weight-value" class="block font-semibold text-[#14231C] mb-1.5">Weight (kg)</label>
+                                <input id="weight-value" type="number" name="weight_kg" min="0.01" max="9999.99" step="0.01" required class="w-full bg-[#F9F8F3] border border-[#E7E3D6] rounded-xl px-3 py-2.5 outline-none focus:border-[#1F4D3A]">
+                            </div>
+                        </div>
+                        <div>
+                            <div class="mb-1.5 flex items-center justify-between gap-2">
+                                <label for="weight-notes" class="block font-semibold text-[#14231C]">Notes <span class="font-normal text-[#8B8577]">(optional)</span></label>
+                                <button type="button" data-voice-target="weight-notes" data-voice-status="weight-voice-status" class="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E7DD] bg-emerald-50 px-2.5 py-1.5 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">
+                                    <i class="fa-solid fa-microphone" aria-hidden="true"></i><span>Dictate</span>
+                                </button>
+                            </div>
+                            <textarea id="weight-notes" name="notes" maxlength="2000" rows="2" class="w-full resize-y rounded-xl border border-[#E7E3D6] bg-[#F9F8F3] px-3 py-2.5 outline-none focus:border-[#1F4D3A]"></textarea>
+                            <p id="weight-voice-status" class="mt-1 text-[10px] text-[#6B7568]" aria-live="polite">Dictation uses your browser's speech recognition and requires microphone permission.</p>
+                        </div>
+                        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 bg-[#1F4D3A] text-white font-semibold py-3 rounded-xl shadow-sm hover:bg-[#173c2d] transition-colors">
+                            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save weigh-in
+                        </button>
+                    </form>
+                    <div class="border-t border-[#E7E3D6] pt-4 space-y-3 xl:border-t-0 xl:border-l xl:pl-6 xl:pt-0">
+                        <h3 class="font-display font-bold text-sm text-[#14231C]">Recent weigh-ins</h3>
+                        <div class="space-y-2">
+                            {% for entry in weight_logs %}
+                                <p class="flex justify-between gap-3 rounded-xl bg-violet-50/60 border border-violet-100 px-3 py-2 text-xs">
+                                    <time class="text-[#6B7568]">{{ entry.date|date:"M j, Y" }}</time>
+                                    <span class="text-right"><strong class="text-[#14231C]">{{ entry.weight_kg|floatformat:"-2" }} kg</strong>{% if entry.notes %}<span class="block mt-1 text-[10px] font-normal text-[#6B7568]">{{ entry.notes }}</span>{% endif %}</span>
+                                </p>
+                            {% empty %}
+                                <p class="text-[11px] text-[#8B8577] italic">No weigh-ins recorded yet.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="xl:col-span-2">
+                        {% include "fitness/partials/weight_progress_chart.html" with chart_id="member-logging-weight-progress" %}
+                        {% include "fitness/partials/weight_goal_panel.html" %}
+                    </div>
+                </section>
+
             <!-- Strength log -->
-            <section class="order-2 h-full bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
+            <section id="member-workout-section" class="order-2 h-full bg-white border border-[#E7E3D6] rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
                 <div class="flex items-center gap-3">
                     <span class="w-11 h-11 rounded-2xl bg-emerald-50 text-[#1F4D3A] flex items-center justify-center shrink-0"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i></span>
                     <div>
@@ -210,10 +344,21 @@
                                 <div><label for="exercise-sets-1" class="block sm:sr-only text-[10px] font-semibold text-[#6B7568] mb-1">Sets</label><select id="exercise-sets-1" name="sets" class="w-full bg-[#FCFBF8] border border-[#E7E3D6] rounded-lg px-2 py-2.5 text-[11px] outline-none focus:border-[#1F4D3A]"><option value="">Sets</option>{% for set_count in set_options %}<option value="{{ set_count }}">{{ set_count }}</option>{% endfor %}</select></div>
                                 <div><label for="exercise-reps-1" class="block sm:sr-only text-[10px] font-semibold text-[#6B7568] mb-1">Rep range</label><select id="exercise-reps-1" name="rep_range" class="w-full bg-[#FCFBF8] border border-[#E7E3D6] rounded-lg px-2 py-2.5 text-[11px] outline-none focus:border-[#1F4D3A]"><option value="">Reps</option>{% for rep_range in rep_ranges %}<option value="{{ rep_range }}">{{ rep_range }}</option>{% endfor %}</select></div>
                                 <button type="button" data-remove-exercise aria-label="Remove exercise row" class="w-8 h-9 rounded-lg text-[#8B8577] hover:bg-red-50 hover:text-red-700 transition-colors"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-                                <div data-exercise-guide class="hidden col-span-full rounded-lg bg-emerald-50 px-3 py-2.5 text-[11px] text-[#315B45]" aria-live="polite"><i class="fa-solid fa-person-circle-check mr-1.5" aria-hidden="true"></i><span data-guide-description></span> <a data-guide-link href="#" target="_blank" rel="noopener noreferrer" class="ml-1 inline-flex items-center gap-1 font-semibold underline underline-offset-2">Watch form reference <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>
+                                <div data-exercise-guide class="hidden col-span-full rounded-lg bg-emerald-50 px-3 py-2.5 text-[11px] text-[#315B45]" aria-live="polite"><p><i class="fa-solid fa-person-circle-check mr-1.5" aria-hidden="true"></i><span data-guide-description></span></p><iframe data-guide-player class="mt-3 hidden w-full aspect-video rounded-xl shadow-md" title="Exercise video demonstration" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><p data-guide-unavailable class="mt-2 hidden text-[10px] text-[#6B7568]">No embeddable video reference is available yet.</p></div>
                             </div>
                         </div>
                         <p class="text-[10px] text-[#8B8577]">Maximum 20 exercises per session.</p>
+                    </div>
+
+                    <div>
+                        <div class="mb-1.5 flex items-center justify-between gap-2">
+                            <label for="workout-notes" class="block font-semibold text-[#14231C]">Session notes <span class="font-normal text-[#8B8577]">(optional)</span></label>
+                            <button type="button" data-voice-target="workout-notes" data-voice-status="workout-voice-status" class="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E7DD] bg-emerald-50 px-2.5 py-1.5 text-[10px] font-semibold text-[#1F4D3A] hover:bg-emerald-100">
+                                <i class="fa-solid fa-microphone" aria-hidden="true"></i><span>Dictate</span>
+                            </button>
+                        </div>
+                        <textarea id="workout-notes" name="notes" maxlength="2000" rows="3" class="w-full resize-y rounded-xl border border-[#E7E3D6] bg-[#F9F8F3] px-3 py-2.5 outline-none focus:border-[#1F4D3A]" placeholder="How did the session feel? Add effort, form, or recovery notes."></textarea>
+                        <p id="workout-voice-status" class="mt-1 text-[10px] text-[#6B7568]" aria-live="polite">Dictation uses your browser's speech recognition and requires microphone permission.</p>
                     </div>
 
                     <button type="submit" class="w-full inline-flex items-center justify-center gap-2 bg-[#1F4D3A] text-white font-semibold py-3 rounded-xl shadow-sm hover:bg-[#173c2d] transition-colors"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save strength session</button>
@@ -231,6 +376,7 @@
                                         {% empty %}{% if workout.exercise_details %}<li class="whitespace-pre-line">{{ workout.exercise_details }}</li>{% else %}<li>Exercise details unavailable.</li>{% endif %}{% endfor %}
                                     </ul>
                                 {% endif %}
+                                {% if workout.notes %}<p class="mt-2 whitespace-pre-line break-words text-[11px] text-[#52627A]"><strong>Notes:</strong> {{ workout.notes }}</p>{% endif %}
                             </article>
                         {% empty %}<p class="text-[11px] text-[#8B8577] italic">No strength sessions recorded yet.</p>{% endfor %}
                     </div>
@@ -245,7 +391,7 @@
             <div><label data-label="sets" class="block sm:sr-only text-[10px] font-semibold text-[#6B7568] mb-1">Sets</label><select name="sets" class="w-full bg-[#FCFBF8] border border-[#E7E3D6] rounded-lg px-2 py-2.5 text-[11px] outline-none focus:border-[#1F4D3A]"><option value="">Sets</option>{% for set_count in set_options %}<option value="{{ set_count }}">{{ set_count }}</option>{% endfor %}</select></div>
             <div><label data-label="reps" class="block sm:sr-only text-[10px] font-semibold text-[#6B7568] mb-1">Rep range</label><select name="rep_range" class="w-full bg-[#FCFBF8] border border-[#E7E3D6] rounded-lg px-2 py-2.5 text-[11px] outline-none focus:border-[#1F4D3A]"><option value="">Reps</option>{% for rep_range in rep_ranges %}<option value="{{ rep_range }}">{{ rep_range }}</option>{% endfor %}</select></div>
             <button type="button" data-remove-exercise aria-label="Remove exercise row" class="w-8 h-9 rounded-lg text-[#8B8577] hover:bg-red-50 hover:text-red-700 transition-colors"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-            <div data-exercise-guide class="hidden col-span-full rounded-lg bg-emerald-50 px-3 py-2.5 text-[11px] text-[#315B45]" aria-live="polite"><i class="fa-solid fa-person-circle-check mr-1.5" aria-hidden="true"></i><span data-guide-description></span> <a data-guide-link href="#" target="_blank" rel="noopener noreferrer" class="ml-1 inline-flex items-center gap-1 font-semibold underline underline-offset-2">Watch form reference <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>
+            <div data-exercise-guide class="hidden col-span-full rounded-lg bg-emerald-50 px-3 py-2.5 text-[11px] text-[#315B45]" aria-live="polite"><p><i class="fa-solid fa-person-circle-check mr-1.5" aria-hidden="true"></i><span data-guide-description></span></p><iframe data-guide-player class="mt-3 hidden w-full aspect-video rounded-xl shadow-md" title="Exercise video demonstration" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe><p data-guide-unavailable class="mt-2 hidden text-[10px] text-[#6B7568]">No embeddable video reference is available yet.</p></div>
         </div>
     </template>
 
@@ -287,8 +433,115 @@
             guidePanel.classList.toggle('hidden', !guide);
             if (!guide) return;
             guidePanel.querySelector('[data-guide-description]').textContent = guide.description;
-            guidePanel.querySelector('[data-guide-link]').href = guide.video_url;
+            const player = guidePanel.querySelector('[data-guide-player]');
+            const unavailable = guidePanel.querySelector('[data-guide-unavailable]');
+            player.classList.toggle('hidden', !guide.embed_url);
+            unavailable.classList.toggle('hidden', Boolean(guide.embed_url));
+            if (guide.embed_url) {
+                player.src = guide.embed_url;
+                player.title = `${guide.name} video demonstration`;
+            } else {
+                player.removeAttribute('src');
+            }
         });
+    </script>
+    <script>
+        (function () {
+            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            var voiceButtons = document.querySelectorAll('[data-voice-target]');
+            if (!SpeechRecognition) {
+                voiceButtons.forEach(function (button) {
+                    button.disabled = true;
+                    button.setAttribute('aria-disabled', 'true');
+                    document.getElementById(button.dataset.voiceStatus).textContent =
+                        'Dictation is not supported by this browser. You can still type your notes.';
+                });
+                return;
+            }
+
+            voiceButtons.forEach(function (button) {
+                var input = document.getElementById(button.dataset.voiceTarget);
+                var status = document.getElementById(button.dataset.voiceStatus);
+                var label = button.querySelector('span');
+                var recognition = new SpeechRecognition();
+                recognition.lang = navigator.language || 'en-US';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                button.addEventListener('click', function () {
+                    if (button.getAttribute('aria-pressed') === 'true') {
+                        recognition.stop();
+                        return;
+                    }
+                    status.textContent = 'Listening… Speak clearly, then pause to finish.';
+                    label.textContent = 'Stop dictation';
+                    button.setAttribute('aria-pressed', 'true');
+                    try {
+                        recognition.start();
+                    } catch (error) {
+                        button.setAttribute('aria-pressed', 'false');
+                        label.textContent = 'Dictate';
+                        status.textContent = 'Could not start dictation. Check microphone permission and try again.';
+                    }
+                });
+
+                recognition.onresult = function (event) {
+                    var transcript = Array.from(event.results)
+                        .slice(event.resultIndex)
+                        .filter(function (result) { return result.isFinal; })
+                        .map(function (result) { return result[0].transcript.trim(); })
+                        .filter(Boolean)
+                        .join(' ');
+                    if (transcript) {
+                        var separator = input.value && !/\s$/.test(input.value) ? ' ' : '';
+                        input.setRangeText(separator + transcript, input.selectionStart, input.selectionEnd, 'end');
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        status.textContent = 'Dictation added. Review the text before saving.';
+                    }
+                };
+                recognition.onerror = function (event) {
+                    status.textContent = event.error === 'not-allowed'
+                        ? 'Microphone permission was denied. Allow access or type your notes.'
+                        : 'Dictation stopped (' + event.error + '). You can try again or type your notes.';
+                };
+                recognition.onend = function () {
+                    button.setAttribute('aria-pressed', 'false');
+                    label.textContent = 'Dictate';
+                    if (status.textContent.indexOf('Listening') === 0) {
+                        status.textContent = 'No speech was added. Try again or type your notes.';
+                    }
+                };
+            });
+        })();
+    </script>
+    <script>
+        (function () {
+            var tabs = document.querySelectorAll('[data-tracker-tab]');
+            if (!tabs.length) return;
+
+            function updateActiveTab() {
+                var target = window.location.hash || '#member-daily-log-section';
+                tabs.forEach(function (tab) {
+                    var active = tab.getAttribute('href') === target;
+                    if (active) {
+                        tab.setAttribute('aria-current', 'location');
+                    } else {
+                        tab.removeAttribute('aria-current');
+                    }
+                });
+            }
+
+            tabs.forEach(function (tab) {
+                tab.addEventListener('click', function () {
+                    tabs.forEach(function (candidate) {
+                        candidate.removeAttribute('aria-current');
+                    });
+                    tab.setAttribute('aria-current', 'location');
+                });
+            });
+            window.addEventListener('hashchange', updateActiveTab);
+            updateActiveTab();
+        })();
     </script>
 </body>
 </html>

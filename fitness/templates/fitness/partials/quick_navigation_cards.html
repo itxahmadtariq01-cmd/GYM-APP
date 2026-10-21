@@ -1,0 +1,115 @@
+<style>
+    .qn-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+        gap: .75rem;
+    }
+    .qn-card {
+        display: flex;
+        align-items: flex-start;
+        gap: .75rem;
+        min-height: 6rem;
+        padding: 1rem;
+        border: 1px solid var(--ui-line, #E1E8EF);
+        border-radius: 16px;
+        background: var(--ui-surface, #fff);
+        box-shadow: 0 1px 2px rgba(15, 27, 45, .04);
+        color: inherit;
+        text-decoration: none;
+        transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    .qn-card:hover {
+        border-color: #7CCBC6;
+        box-shadow: 0 8px 20px -10px rgba(15, 27, 45, .22);
+    }
+    .qn-card:focus-visible {
+        outline: 3px solid rgba(10, 127, 123, .45);
+        outline-offset: 3px;
+    }
+    .qn-icon {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 12px;
+        background: #F0FDFA;
+        color: #0F766E;
+    }
+    .qn-icon--amber {
+        background: #FFFBEB;
+        color: #B45309;
+    }
+    .qn-title {
+        display: block;
+        font-size: .875rem;
+        font-weight: 700;
+        color: var(--ui-text, #0F1B2D);
+    }
+    .qn-text {
+        display: block;
+        margin-top: .25rem;
+        font-size: .75rem;
+        color: var(--ui-text-muted, #52627A);
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .qn-card { transition: none; }
+    }
+</style>
+
+{# Teal icon = view/browse card. Amber icon (qn-icon--amber) = create/add action. #}
+{% with page=request.resolver_match.url_name %}
+<nav class="qn-grid" aria-label="On this page">
+    {% if page == 'manage_workouts' %}
+    <a href="#section-list" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-list-check" aria-hidden="true"></i></span><span><strong class="qn-title">Workout plans</strong><span class="qn-text">Review assigned routines.</span></span></a>
+    <a href="#section-create" class="qn-card"><span class="qn-icon qn-icon--amber"><i class="fa-solid fa-circle-plus" aria-hidden="true"></i></span><span><strong class="qn-title">Create a plan</strong><span class="qn-text">Build and assign a routine.</span></span></a>
+
+    {% elif page == 'manage_diets' %}
+    <a href="#section-list" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-bowl-food" aria-hidden="true"></i></span><span><strong class="qn-title">Nutrition plans</strong><span class="qn-text">Review assigned meal plans.</span></span></a>
+    <a href="#section-create" class="qn-card"><span class="qn-icon qn-icon--amber"><i class="fa-solid fa-circle-plus" aria-hidden="true"></i></span><span><strong class="qn-title">Create a plan</strong><span class="qn-text">Set up a member meal plan.</span></span></a>
+
+    {% elif page == 'manage_attendance' %}
+    <a href="#section-list" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span><span><strong class="qn-title">Attendance history</strong><span class="qn-text">Browse check-ins and member records.</span></span></a>
+    <a href="#section-create" class="qn-card"><span class="qn-icon qn-icon--amber"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i></span><span><strong class="qn-title">Record attendance</strong><span class="qn-text">Mark attendance for one or more members.</span></span></a>
+
+    {% elif page == 'member_logging' %}
+    {# Tab links: styled by .tracker-tab and driven by the tracker script, so this markup is unchanged #}
+    <a href="#member-daily-log-section" data-tracker-tab class="tracker-tab"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i><span><strong class="block text-sm">Daily log</strong><span class="mt-1 block text-xs font-medium">Today’s activity</span></span></a>
+    <a href="#member-meal-section" data-tracker-tab class="tracker-tab"><i class="fa-solid fa-utensils" aria-hidden="true"></i><span><strong class="block text-sm">Meals</strong><span class="mt-1 block text-xs font-medium">Nutrition and hydration</span></span></a>
+    <a href="#member-workout-section" data-tracker-tab class="tracker-tab"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i><span><strong class="block text-sm">Workouts</strong><span class="mt-1 block text-xs font-medium">Strength and cardio</span></span></a>
+    <a href="#member-weight-section" data-tracker-tab class="tracker-tab"><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i><span><strong class="block text-sm">Weight &amp; stats</strong><span class="mt-1 block text-xs font-medium">Progress and goals</span></span></a>
+
+    {% elif page == 'workout_split' %}
+    <a href="#split-editor-title" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></span><span><strong class="qn-title">Build your schedule</strong><span class="qn-text">Choose training days and focus areas.</span></span></a>
+    <a href="#split-preview-title" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span><span><strong class="qn-title">Review weekly plan</strong><span class="qn-text">Check your schedule before saving.</span></span></a>
+
+    {% elif page == 'exercise_directory' %}
+    <a href="#exercise-search" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></span><span><strong class="qn-title">Find an exercise</strong><span class="qn-text">Search by name or muscle group.</span></span></a>
+    <a href="#exercise-directory" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span><span><strong class="qn-title">Browse the library</strong><span class="qn-text">Explore movement guides.</span></span></a>
+
+    {% elif page == 'ai_workouts' %}
+    <a href="#mg-grid" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-bullseye" aria-hidden="true"></i></span><span><strong class="qn-title">Choose a focus</strong><span class="qn-text">Select a muscle group.</span></span></a>
+    <a href="#exercise-library-title" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span><span><strong class="qn-title">Exercise guide</strong><span class="qn-text">Browse exercise references.</span></span></a>
+    {% if ai_recommendations %}
+    <a href="#workout-results" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-list-check" aria-hidden="true"></i></span><span><strong class="qn-title">Generated suggestions</strong><span class="qn-text">Review your workout options.</span></span></a>
+    {% endif %}
+
+    {% elif page == 'manage_trainers' %}
+    <a href="#trainer-roster-title" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-people-group" aria-hidden="true"></i></span><span><strong class="qn-title">Trainer roster</strong><span class="qn-text">Review coaching staff.</span></span></a>
+    <a href="#assignment-title" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-user-group" aria-hidden="true"></i></span><span><strong class="qn-title">Member assignments</strong><span class="qn-text">Match members with a trainer.</span></span></a>
+    <a href="#create-trainer" class="qn-card"><span class="qn-icon qn-icon--amber"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span><span><strong class="qn-title">Add a trainer</strong><span class="qn-text">Create a coaching account.</span></span></a>
+
+    {% elif page == 'admin_payments' %}
+    <a href="#payments-table" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-receipt" aria-hidden="true"></i></span><span><strong class="qn-title">Payment submissions</strong><span class="qn-text">Review proofs and update status.</span></span></a>
+
+    {% elif page == 'admin_member_detail' %}
+    <a href="#member-weight-title" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i></span><span><strong class="qn-title">Weight progress</strong><span class="qn-text">Review member weigh-ins.</span></span></a>
+    <a href="#member-daily-activity" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span><span><strong class="qn-title">Daily activity</strong><span class="qn-text">Review meals and training history.</span></span></a>
+
+    {% elif page == 'member_daily_report' %}
+    <a href="#report-summary" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-chart-simple" aria-hidden="true"></i></span><span><strong class="qn-title">Activity summary</strong><span class="qn-text">Review this member’s totals.</span></span></a>
+    <a href="#report-timeline" class="qn-card"><span class="qn-icon"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i></span><span><strong class="qn-title">Activity timeline</strong><span class="qn-text">Browse daily entries.</span></span></a>
+    {% endif %}
+</nav>
+{% endwith %}

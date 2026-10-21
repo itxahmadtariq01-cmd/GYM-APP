@@ -13,7 +13,6 @@ def permission_required(permission_codename):
             if not request.user.is_authenticated:
                 return redirect('login')
             
-            # Yahan role ka naam nahi check ho raha, balkay permission check ho rahi hai!
             if request.user.has_permission(permission_codename):
                 return view_func(request, *args, **kwargs)
                 

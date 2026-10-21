@@ -1,0 +1,16 @@
+{% comment %}
+  The navigation links, defined once and reused by the sidebar and the mobile bar.
+  Params: group ("primary" | "secondary"), variant ("side" | "bar").
+  URLs come from app_navigation.html.
+{% endcomment %}
+{% if group == "primary" %}
+    {% include "fitness/partials/nav_link.html" with href=dashboard_url fragment="#tab-overview" label="Home" icon="fa-house" match_path="1" %}
+    {% include "fitness/partials/nav_link.html" with href=log_url label="Daily log" icon="fa-clipboard-list" %}
+    {% include "fitness/partials/nav_link.html" with href=workouts_url label="Workout schedule" icon="fa-calendar-week" %}
+    {% include "fitness/partials/nav_link.html" with href=nutrition_url fragment=nutrition_fragment label="Nutrition" icon="fa-bowl-food" %}
+{% else %}
+    {% include "fitness/partials/nav_link.html" with href=dashboard_url fragment=stats_fragment label="Weight &amp; stats" icon="fa-scale-balanced" %}
+    {% include "fitness/partials/nav_link.html" with href=exercises_url label="Exercise directory" icon="fa-book-open" %}
+    {% include "fitness/partials/nav_link.html" with href=ai_url label="AI generator" icon="fa-wand-magic-sparkles" note="Members only" %}
+    {% include "fitness/partials/nav_link.html" with href=dashboard_url fragment="#tab-profile" label="Profile" icon="fa-user" %}
+{% endif %}

@@ -70,7 +70,7 @@ if env_bool('DJANGO_TRUST_X_FORWARDED_PROTO', False):
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
-# Application definition
+# Application definition                                                            
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -147,6 +147,8 @@ else:
 
 # Custom User Model Configuration (Bohut zaroori hai RBAC ke liye)
 AUTH_USER_MODEL = 'fitness.CustomUser'
+LOGIN_REDIRECT_URL = 'member_logging'
+LOGOUT_REDIRECT_URL = 'login'
 
 
 # Password validation

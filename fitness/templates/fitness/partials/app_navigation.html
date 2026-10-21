@@ -1,73 +1,103 @@
+{% comment %}
+  Primary navigation: desktop sidebar + mobile bottom bar.
+  Needs: desktop_sidebar (bool). Uses the shared fitness/partials navigation templates.
+  Role logic lives in ONE place (the block below) instead of being repeated on every link.
+{% endcomment %}
 {% with user_role=request.user.role.name|default:'Member'|lower %}
+
+{% url 'dashboard' as dashboard_url %}
+{% url 'exercise_directory' as exercises_url %}
+{% if request.user.is_staff or request.user.is_superuser or user_role == 'admin' or user_role == 'trainer' %}
+    {% url 'manage_attendance' as log_url %}
+    {% url 'manage_workouts' as workouts_url %}
+    {% url 'manage_diets' as nutrition_url %}
+    {% firstof "" as nutrition_fragment %}
+    {% firstof "#tab-overview" as stats_fragment %}
+    {% firstof "" as ai_url %}
+{% else %}
+    {% url 'member_logging' as log_url %}
+    {% url 'workout_split' as workouts_url %}
+    {% firstof dashboard_url as nutrition_url %}
+    {% firstof "#tab-diets" as nutrition_fragment %}
+    {% firstof "#weight-progress-title" as stats_fragment %}
+    {% url 'ai_workouts' as ai_url %}
+{% endif %}
+
 {% if desktop_sidebar %}
-<aside class="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col justify-between border-r border-[#E7E3D6] bg-white md:flex" aria-label="Primary navigation">
+<aside class="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col justify-between overflow-y-auto border-r border-[#E1E8EF] bg-white md:flex" aria-label="Sidebar">
     <div>
-        <a href="{% url 'dashboard' %}" class="flex h-20 items-center gap-3 border-b border-[#E7E3D6] px-6">
-            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1F4D3A] text-white"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i></span>
-            <span><strong class="block font-display text-sm text-[#14231C]">Caliber Labs</strong><span class="text-[10px] text-[#6B7568]">Gym operations</span></span>
+        <a href="{{ dashboard_url }}" class="flex h-20 items-center gap-3 border-b border-[#E1E8EF] px-6 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-400">
+            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0A7F7B] text-white"><i class="fa-solid fa-dumbbell" aria-hidden="true"></i></span>
+            <span>
+                <strong class="block font-display text-lg font-semibold leading-none text-[#0F1B2D]">Caliber Labs</strong>
+                <span class="text-[11px] text-[#52627A]">Gym operations</span>
+            </span>
         </a>
-        <nav class="space-y-1 p-3" aria-label="Application pages">
-            <a href="{% url 'dashboard' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#1F4D3A] hover:bg-[#F4F2EA]"><i class="fa-solid fa-gauge-high w-5 text-center" aria-hidden="true"></i>Dashboard</a>
-            {% if request.user.is_staff or request.user.is_superuser or user_role == 'admin' or user_role == 'trainer' %}
-                <a href="{% url 'manage_workouts' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-dumbbell w-5 text-center text-[#1F4D3A]" aria-hidden="true"></i>Workout plans</a>
-                <a href="{% url 'manage_diets' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-bowl-food w-5 text-center text-[#A87C3F]" aria-hidden="true"></i>Nutrition plans</a>
-                <a href="{% url 'manage_attendance' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-fingerprint w-5 text-center text-[#6B7D74]" aria-hidden="true"></i>Attendance</a>
-                {% if user_role == 'admin' or request.user.is_staff or request.user.is_superuser %}
-                    <a href="{% url 'manage_trainers' %}" class="flex items-center gap-3 rounded-lg border border-[#D8C89A] bg-[#FCFBF8] px-3 py-2.5 text-sm font-semibold text-[#765A2D] hover:bg-[#F3EBD5]"><i class="fa-solid fa-people-group w-5 text-center" aria-hidden="true"></i>Trainer management</a>
-                    <a href="{% url 'admin_payments' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-receipt w-5 text-center text-[#A87C3F]" aria-hidden="true"></i>Payments</a>
-                    <a href="/admin/" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-shield-halved w-5 text-center text-[#A6402E]" aria-hidden="true"></i>Django Admin</a>
-                {% endif %}
-            {% else %}
-                <a href="{% url 'member_logging' %}" class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#4B5750] hover:bg-[#F4F2EA]"><i class="fa-solid fa-clipboard-list w-5 text-center text-[#1F4D3A]" aria-hidden="true"></i>Daily logging</a>
-            {% endif %}
+
+        <nav class="space-y-1 p-3" aria-label="Main">
+            {% include "fitness/partials/nav_items.html" with group="primary" variant="side" %}
+            {% include "fitness/partials/nav_items.html" with group="secondary" variant="side" %}
         </nav>
-        <section class="mx-3 mt-5 rounded-xl border border-[#D8C89A] border-l-4 border-l-[#A87C3F] bg-[#FCFBF8] p-3" aria-labelledby="featured-tools-title">
-            <div class="mb-2 flex items-center justify-between gap-2 px-1">
-                <h2 id="featured-tools-title" class="text-[10px] font-bold uppercase tracking-wide text-[#765A2D]">Featured tools</h2>
-                <span class="rounded-full bg-[#F3EBD5] px-2 py-0.5 text-[9px] font-bold uppercase text-[#765A2D]">Plus</span>
-            </div>
-            <nav class="space-y-1" aria-label="Featured tools">
-                <a href="{% url 'exercise_directory' %}" class="group flex items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-[#284C3A] shadow-sm ring-1 ring-[#E7E3D6] transition-colors hover:bg-emerald-50">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F2EA] text-[#A87C3F] transition-colors group-hover:bg-[#F3EBD5]"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
-                    <span>Exercise directory</span><span class="ml-auto text-[9px] font-bold uppercase text-[#9A7A3F]">Guide</span>
-                </a>
-                {% if not request.user.is_staff and not request.user.is_superuser and user_role != 'admin' and user_role != 'trainer' %}
-                <a href="{% url 'ai_workouts' %}" class="group flex items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-[#284C3A] shadow-sm ring-1 ring-[#E7E3D6] transition-colors hover:bg-emerald-50">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3EBD5] text-[#9A7A3F] transition-colors group-hover:bg-amber-100"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></span>
-                    <span>AI workout generator</span><span class="ml-auto rounded-full bg-[#F3EBD5] px-1.5 py-0.5 text-[9px] font-bold text-[#765A2D]">AI</span>
-                </a>
-                {% endif %}
-            </nav>
-        </section>
     </div>
-    <div class="border-t border-[#E7E3D6] p-4">
-        <p class="truncate text-xs font-semibold text-[#14231C]">{{ request.user.get_full_name|default:request.user.username }}</p>
-        <p class="mt-0.5 text-[10px] capitalize text-[#6B7568]">{{ user_role }}</p>
+
+    <div class="border-t border-[#E1E8EF] p-4">
+        <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-800" aria-hidden="true">{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}</span>
+            <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-[#0F1B2D]">{{ request.user.get_full_name|default:request.user.username }}</p>
+                <p class="text-xs capitalize text-[#52627A]">{{ user_role }}</p>
+            </div>
+        </div>
         <form action="{% url 'logout' %}" method="post" class="mt-3">
             {% csrf_token %}
-            <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-[#A6402E] hover:bg-red-50"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>Log out</button>
+            <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-rose-700 outline-none transition-colors hover:bg-rose-50 focus-visible:ring-2 focus-visible:ring-rose-300">
+                <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>Log out
+            </button>
         </form>
     </div>
 </aside>
 {% endif %}
 
-<nav class="fixed inset-x-0 bottom-0 z-50 grid {% if request.user.is_staff or request.user.is_superuser or user_role == 'admin' %}grid-cols-7{% else %}grid-cols-5{% endif %} border-t border-[#DCD8CB] bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(20,35,28,0.08)] md:hidden" aria-label="Primary navigation">
-    {% if request.user.is_staff or request.user.is_superuser or user_role == 'admin' or user_role == 'trainer' %}
-        <a href="{% url 'dashboard' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#1F4D3A]" aria-label="Dashboard"><i class="fa-solid fa-gauge-high text-base" aria-hidden="true"></i><span>Home</span></a>
-        <a href="{% url 'manage_workouts' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Workout plans"><i class="fa-solid fa-dumbbell text-base" aria-hidden="true"></i><span>Workouts</span></a>
-        <a href="{% url 'manage_diets' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Nutrition plans"><i class="fa-solid fa-bowl-food text-base" aria-hidden="true"></i><span>Nutrition</span></a>
-        <a href="{% url 'manage_attendance' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Attendance"><i class="fa-solid fa-fingerprint text-base" aria-hidden="true"></i><span>Attendance</span></a>
-        {% if user_role == 'admin' or request.user.is_staff or request.user.is_superuser %}
-            <a href="{% url 'manage_trainers' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 border-t-2 border-[#D8C89A] bg-[#FCFBF8] text-[9px] font-semibold text-[#765A2D]" aria-label="Trainer management"><i class="fa-solid fa-people-group text-base" aria-hidden="true"></i><span>Trainers</span></a>
-            <a href="{% url 'admin_payments' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Payments"><i class="fa-solid fa-receipt text-base" aria-hidden="true"></i><span>Payments</span></a>
-        {% endif %}
-        <a href="{% url 'exercise_directory' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 border-t-2 border-[#D8C89A] bg-[#FCFBF8] text-[10px] font-semibold text-[#765A2D]" aria-label="Exercise directory"><i class="fa-solid fa-book-open text-base" aria-hidden="true"></i><span>Exercises</span></a>
-    {% else %}
-        <a href="{% url 'dashboard' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#1F4D3A]" aria-label="Dashboard"><i class="fa-solid fa-gauge-high text-base" aria-hidden="true"></i><span>Home</span></a>
-        <a href="{% url 'member_logging' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Daily logging"><i class="fa-solid fa-clipboard-list text-base" aria-hidden="true"></i><span>Journal</span></a>
-        <a href="{% url 'ai_workouts' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 border-t-2 border-[#D8C89A] bg-[#FCFBF8] text-[10px] font-semibold text-[#765A2D]" aria-label="AI workout generator"><i class="fa-solid fa-wand-magic-sparkles text-base" aria-hidden="true"></i><span>AI coach</span></a>
-        <a href="{% url 'exercise_directory' %}" class="flex min-h-16 flex-col items-center justify-center gap-1 border-t-2 border-[#D8C89A] bg-[#FCFBF8] text-[10px] font-semibold text-[#765A2D]" aria-label="Exercise directory"><i class="fa-solid fa-book-open text-base" aria-hidden="true"></i><span>Exercises</span></a>
-        <a href="{% url 'dashboard' %}#profile" class="flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#4B5750]" aria-label="Profile"><i class="fa-solid fa-id-badge text-base" aria-hidden="true"></i><span>Profile</span></a>
-    {% endif %}
+{# ---------- Mobile: 4 main tabs + a More menu (was 8 side-scrolling tabs, with no log out) ---------- #}
+<nav class="fixed inset-x-0 bottom-0 z-50 flex border-t border-[#E1E8EF] bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(15,27,45,0.08)] backdrop-blur md:hidden" aria-label="Main">
+    {% include "fitness/partials/nav_items.html" with group="primary" variant="bar" %}
+
+    <details data-more-menu class="relative flex-1">
+        <summary class="flex h-full min-h-16 w-full cursor-pointer list-none flex-col items-center justify-center gap-1 border-t-2 border-transparent px-1 text-center text-[11px] font-semibold leading-tight text-[#52627A] outline-none focus-visible:bg-teal-50 [&::-webkit-details-marker]:hidden">
+            <i class="fa-solid fa-ellipsis text-lg" aria-hidden="true"></i><span>More</span>
+        </summary>
+        <div class="absolute bottom-full right-2 mb-2 w-64 rounded-2xl border border-[#E1E8EF] bg-white p-2 shadow-xl">
+            {% include "fitness/partials/nav_items.html" with group="secondary" variant="side" %}
+            <div class="mt-2 border-t border-[#E1E8EF] pt-2">
+                <p class="truncate px-3 pt-1 text-sm font-semibold text-[#0F1B2D]">{{ request.user.get_full_name|default:request.user.username }}</p>
+                <p class="px-3 pb-1 text-xs capitalize text-[#52627A]">{{ user_role }}</p>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-rose-700 outline-none transition-colors hover:bg-rose-50 focus-visible:ring-2 focus-visible:ring-rose-300">
+                        <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center" aria-hidden="true"></i>Log out
+                    </button>
+                </form>
+            </div>
+        </div>
+    </details>
 </nav>
+
+<script>
+    (function () {
+        var menu = document.querySelector('[data-more-menu]');
+        if (!menu) return;
+        document.addEventListener('click', function (event) {
+            if (menu.open && !menu.contains(event.target)) menu.open = false;
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && menu.open) {
+                menu.open = false;
+                menu.querySelector('summary').focus();
+            }
+        });
+        menu.addEventListener('click', function (event) {
+            if (event.target.closest('a')) menu.open = false;
+        });
+    })();
+</script>
 {% endwith %}
