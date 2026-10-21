@@ -12,6 +12,7 @@
         .font-display { font-family: 'Space Grotesk', sans-serif; }
     </style>
     {% include 'fitness/partials/premium_ui_styles.html' %}
+    {% include "fitness/partials/pwa_head.html" %}
 </head>
 <body class="ui-premium min-h-screen bg-[#F4F2EA] pb-20 text-[#1B241E] antialiased md:pb-0 md:pl-64">
     {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
@@ -301,5 +302,6 @@
             render();
         })();
     </script>
+    {% include "fitness/partials/pwa_registration.html" %}
 </body>
 </html>

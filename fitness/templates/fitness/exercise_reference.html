@@ -187,6 +187,7 @@
         tbody tr:hover { background: rgba(11,138,134,.05); }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
     </style>
+    {% include "fitness/partials/pwa_head.html" %}
 </head>
 <body class="min-h-screen antialiased selection:bg-[#0B8A86] selection:text-white pb-24 md:pb-0 md:pl-64">
     {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
@@ -314,5 +315,6 @@
         });
         filterExercises();
     </script>
+    {% include "fitness/partials/pwa_registration.html" %}
 </body>
 </html>

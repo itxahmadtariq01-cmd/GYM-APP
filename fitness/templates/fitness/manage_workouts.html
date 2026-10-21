@@ -29,6 +29,7 @@
         .nav-btn { transition: background-color .18s ease, color .18s ease; }
     </style>
     {% include 'fitness/partials/premium_ui_styles.html' %}
+    {% include "fitness/partials/pwa_head.html" %}
 </head>
 <body class="ui-premium bg-[#F4F2EA] min-h-screen text-[#1B241E] antialiased selection:bg-[#1F4D3A] selection:text-white flex overflow-hidden md:pl-64">
     {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
@@ -211,5 +212,6 @@
         window.addEventListener('hashchange', activatePanelFromHash);
         document.addEventListener('DOMContentLoaded', activatePanelFromHash);
     </script>
+    {% include "fitness/partials/pwa_registration.html" %}
 </body>
 </html>

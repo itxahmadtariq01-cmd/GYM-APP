@@ -14,6 +14,7 @@
         a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid #1F4D3A; outline-offset: 2px; }
     </style>
     {% include 'fitness/partials/premium_ui_styles.html' %}
+    {% include "fitness/partials/pwa_head.html" %}
 </head>
 <body class="ui-premium min-h-screen bg-[#F4F2EA] text-[#1B241E] antialiased pb-24 md:pb-0 md:pl-64">
     {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
@@ -238,5 +239,6 @@
         memberSearch?.addEventListener('input', filterMembers);
         experienceFilter?.addEventListener('change', filterMembers);
     </script>
+    {% include "fitness/partials/pwa_registration.html" %}
 </body>
 </html>

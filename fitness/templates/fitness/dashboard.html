@@ -213,6 +213,7 @@
         tbody tr:hover { background: rgba(11,138,134,.05); }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
     </style>
+    {% include "fitness/partials/pwa_head.html" %}
 </head>
 <body class="min-h-screen antialiased selection:bg-[#0B8A86] selection:text-white flex overflow-hidden md:pl-64">
     {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
@@ -1350,5 +1351,6 @@
         })();
     </script>
     {% endif %}
+    {% include "fitness/partials/pwa_registration.html" %}
 </body>
 </html>

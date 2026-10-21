@@ -1,3 +1,4 @@
+import json
 from datetime import date, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
@@ -6,6 +7,7 @@ from unittest.mock import Mock, patch
 from django.contrib import admin
 from django.contrib.auth.models import Group, Permission as DjangoPermission
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.staticfiles import finders
 from django.core.exceptions import ValidationError
 from django.template import RequestContext
 from django.template.loader import get_template
@@ -33,6 +35,38 @@ from .models import (
 )
 from .views import _format_workout_response
 from .video_utils import youtube_embed_url
+
+
+class PwaSupportTests(SimpleTestCase):
+	def test_manifest_has_requested_install_metadata(self):
+		manifest_path = finders.find("manifest.json")
+
+		self.assertIsNotNone(manifest_path)
+		with open(manifest_path, encoding="utf-8") as manifest_file:
+			manifest = json.load(manifest_file)
+
+		self.assertEqual(manifest["name"], "Caliber Labs Gym")
+		self.assertEqual(manifest["short_name"], "Caliber")
+		self.assertEqual(manifest["start_url"], "/")
+		self.assertEqual(manifest["display"], "standalone")
+		self.assertEqual(manifest["theme_color"], "#000000")
+
+	def test_service_worker_is_served_with_root_scope(self):
+		response = self.client.get(reverse("service_worker"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response["Content-Type"], "application/javascript")
+		self.assertEqual(response["Service-Worker-Allowed"], "/")
+		self.assertEqual(response["Cache-Control"], "no-cache")
+		self.assertContains(response, "addEventListener('fetch'")
+		self.assertContains(response, "OFFLINE_URL")
+
+	def test_login_page_links_manifest_and_registers_service_worker(self):
+		response = self.client.get(reverse("login"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, '<link rel="manifest" href="/static/manifest.json">')
+		self.assertContains(response, "navigator.serviceWorker.register('/sw.js')")
 
 
 class AppNavigationTemplateTests(SimpleTestCase):

@@ -1,0 +1,9 @@
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/sw.js').catch(function (error) {
+                console.error('Caliber Labs service worker registration failed:', error);
+            });
+        });
+    }
+</script>

@@ -271,6 +271,7 @@
         tbody tr:hover { background: rgba(11,138,134,.05); }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
     </style>
+    {% include "fitness/partials/pwa_head.html" %}
 </head>
 <body class="min-h-screen antialiased selection:bg-[#0B8A86] selection:text-white px-4 py-5 pb-24 sm:px-6 sm:py-7 md:pl-64 md:pb-10">
     {% include 'fitness/partials/app_navigation.html' with desktop_sidebar=True %}
@@ -623,5 +624,6 @@
             if (results) setTimeout(() => results.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), 250);
         })();
     </script>
+    {% include "fitness/partials/pwa_registration.html" %}
 </body>
 </html> 

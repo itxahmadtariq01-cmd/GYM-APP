@@ -220,6 +220,7 @@
 
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
     </style>
+    {% include "fitness/partials/pwa_head.html" %}
 </head>
 <body class="auth antialiased">
 <div class="shell">
@@ -430,5 +431,6 @@
         }
     })();
 </script>
+    {% include "fitness/partials/pwa_registration.html" %}
 </body>
 </html>
