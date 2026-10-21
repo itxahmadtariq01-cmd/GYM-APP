@@ -12,7 +12,6 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.core.mail import send_mail
 from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
@@ -378,30 +377,11 @@ def generate_coaching_recommendations(analysis):
 
 # --- Public / Authentication Views ---
 def signup_view(request):
-    """Register a user, log them in, and send them through dashboard role routing."""
+    """Register and log in a user, then send them through dashboard role routing."""
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            
-            # Debugging check: Print email in console
-            print(f"Registered User Email: {user.email}")
-            
-            # --- Welcome Email Dispatch Logic ---
-            if user.email:
-                try:
-                    subject = 'Welcome to Caliber Labs — Operations Portal'
-                    message = f'Hi {user.username},\n\nYour Caliber Labs account has been created. Open your dashboard to continue; member accounts will be guided through profile onboarding.\n\nBest regards,\nCaliber Labs Team'
-                    sender = settings.DEFAULT_FROM_EMAIL
-                    recipient = [user.email]
-                    
-                    send_mail(subject, message, sender, recipient, fail_silently=False)
-                    print("Welcome email sent successfully!")
-                except Exception as e:
-                    print(f"Email sending failed: {e}")
-            else:
-                print("Error: User email is empty!")
-            
             login(
                 request,
                 user,

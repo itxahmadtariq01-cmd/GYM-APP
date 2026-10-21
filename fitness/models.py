@@ -2,10 +2,6 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.core.mail import send_mail
-from django.conf import settings
 from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
 
@@ -469,38 +465,6 @@ class CardioLog(models.Model):
 
     def __str__(self):
         return f'{self.member.username} - {self.activity} ({self.date}, {self.duration_minutes} min)'
-
-
-# Automated Welcome Email Signal
-@receiver(post_save, sender=CustomUser)
-def send_welcome_email(sender, instance, created, **kwargs):
-    if created and instance.email:
-        subject = 'Welcome to Gym Management System!'
-        message = f"""
-Hello {instance.username},
-
-An account has been successfully created for you in the Gym Management System by the administrator.
-
-Your Login Details:
-Username: {instance.username}
-
-You can access your portal here: http://127.0.0.1:8000/accounts/login/
-
-Note: If this is your first time logging in or you don't remember your password, please contact the gym admin or use the password reset option.
-
-Best regards,
-Gym Management Team
-        """
-        try:
-            send_mail(
-                subject,
-                message,
-                settings.DEFAULT_FROM_EMAIL,
-                [instance.email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            print(f"Error sending email: {e}")
 
 
 # Payment & Fee Management Model

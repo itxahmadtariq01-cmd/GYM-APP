@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 from django.contrib import admin
 from django.contrib.auth.models import Group, Permission as DjangoPermission
 from django.contrib.contenttypes.models import ContentType
+from django.core import mail
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ValidationError
 from django.template import RequestContext
@@ -738,7 +739,7 @@ class BulkAttendanceTests(TestCase):
 		self.assertEqual(self.client.get(report_url).status_code, 302)
 
 	@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
-	def test_signup_redirects_to_dashboard_after_login(self):
+	def test_signup_redirects_to_dashboard_without_sending_email(self):
 		response = self.client.post(reverse("signup"), {
 			"username": "new_member",
 			"email": "new_member@example.com",
@@ -748,6 +749,7 @@ class BulkAttendanceTests(TestCase):
 
 		self.assertRedirects(response, reverse("dashboard"), fetch_redirect_response=False)
 		self.assertIn("_auth_user_id", self.client.session)
+		self.assertEqual(mail.outbox, [])
 
 	def test_login_redirects_members_to_daily_logging(self):
 		user = CustomUser.objects.create_user(
